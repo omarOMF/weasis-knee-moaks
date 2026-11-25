@@ -258,6 +258,66 @@ public final class ScoreSheet {
     return String.join(", ", out);
   }
 
+  /** Worst colour grade of the items under a structure; -1 if nothing entered. */
+  public int structureGrade(String structureKey) {
+    Moaks.Structure st = Moaks.structure(structureKey);
+    int g = -1;
+    if (st != null) {
+      for (String id : st.itemIds()) {
+        g = Math.max(g, grade(id));
+      }
+    }
+    return g;
+  }
+
+  /** How many items under a structure have been scored. */
+  public int structureEntered(String structureKey) {
+    Moaks.Structure st = Moaks.structure(structureKey);
+    int n = 0;
+    if (st != null) {
+      for (String id : st.itemIds()) {
+        if (isEntered(id)) {
+          n++;
+        }
+      }
+    }
+    return n;
+  }
+
+  /** Findings above normal under a structure, e.g. "MFc cartilage 2.1, MFc BML 2". */
+  public String structureSummary(String structureKey) {
+    Moaks.Structure st = Moaks.structure(structureKey);
+    List<String> parts = new ArrayList<>();
+    if (st != null) {
+      for (String id : st.itemIds()) {
+        if (grade(id) > 0) {
+          Item item = Moaks.item(id);
+          parts.add(item.location().replace("Ost", "Ost ") + " " + shortSummary(item));
+        }
+      }
+    }
+    return String.join(", ", parts);
+  }
+
+  /** Marks every untouched item under a structure as normal. */
+  public void markStructureNormal(String structureKey) {
+    Moaks.Structure st = Moaks.structure(structureKey);
+    if (st == null) {
+      return;
+    }
+    pushUndo();
+    for (String id : st.itemIds()) {
+      if (!values.containsKey(id)) {
+        Map<String, String> m = new LinkedHashMap<>();
+        for (Field f : Moaks.item(id).fields()) {
+          m.put(f.id(), f.normal());
+        }
+        values.put(id, m);
+      }
+    }
+    fire();
+  }
+
   /** Number of items entered, and the total. */
   public int enteredCount() {
     return values.size();
@@ -319,7 +379,7 @@ public final class ScoreSheet {
   }
 
   public void assignDot(String dotId, String locationKey) {
-    if (Moaks.location(locationKey) == null) {
+    if (Moaks.structure(locationKey) == null && Moaks.location(locationKey) == null) {
       throw new IllegalArgumentException("Unknown location " + locationKey);
     }
     for (int i = 0; i < dots.size(); i++) {

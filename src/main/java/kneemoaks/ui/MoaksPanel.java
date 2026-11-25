@@ -1,17 +1,25 @@
 package kneemoaks.ui;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.RoundRectangle2D;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -19,18 +27,23 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.Scrollable;
+import javax.swing.SwingConstants;
 import kneemoaks.model.Moaks;
-import kneemoaks.model.Moaks.Tab;
 import kneemoaks.model.ScoreSheet;
 import kneemoaks.model.StudyInfo;
 import kneemoaks.ui.Widgets.ButtonStyle;
 import kneemoaks.ui.Widgets.Card;
 import kneemoaks.ui.Widgets.Pill;
 import kneemoaks.ui.Widgets.ProgressRing;
-import kneemoaks.ui.Widgets.Segmented;
 
-/** The Knee MOAKS side panel: header, tabs, the knee illustration, the scoring card, footer. */
+/**
+ * The Knee MOAKS side panel: the eight structures (and the whole knee), the drawing of the
+ * selected one, and everything to score under it.
+ */
 public final class MoaksPanel extends JPanel {
+
+  private static final String[] PARTS = {"Patella", "Trochlea", "Femur", "Tibia"};
+  private static final String[] KEYS = {"PAT", "TRO", "FEM", "TIB"};
 
   private final MoaksController ctl;
   private final ScoreSheet sheet;
@@ -42,10 +55,8 @@ public final class MoaksPanel extends JPanel {
   private final JTextField reader = new JTextField(5);
   private final Pill dotButton = new Pill("MOAKS dot", ButtonStyle.SECONDARY);
   private final Pill showDots = new Pill("Hide dots", ButtonStyle.LINK);
-  private final Segmented tabs;
-  private final Segmented layers;
+  private final List<StructureButton> buttons = new ArrayList<>();
   private final KneeArt art;
-  private final JPanel softList = new JPanel();
   private final JPanel editorHolder = new JPanel(new BorderLayout());
   private final ProgressRing ring = new ProgressRing();
   private final JLabel count = Widgets.label("", 12.5f, true, Theme.TEXT);
@@ -55,7 +66,6 @@ public final class MoaksPanel extends JPanel {
   private final JLabel emptyNote =
       Widgets.label("Open a knee MRI in the viewer to start.", 12.5f, false, Theme.TEXT_2);
 
-  private Tab tab = Tab.BONE;
   private String shownState = "";
   private boolean updating;
 
@@ -65,20 +75,10 @@ public final class MoaksPanel extends JPanel {
     this.sheet = ctl.sheet();
     setBackground(Theme.PANEL);
     setOpaque(true);
-
-    List<String> tabNames = List.of(Tab.BONE.label, Tab.MENISCI.label, Tab.SOFT.label);
-    tabs = new Segmented(tabNames, null, true);
-    tabs.setSelected(0);
-    tabs.onSelect(i -> showTab(Tab.values()[i]));
-    layers = new Segmented(List.of("Cartilage", "Marrow", "Osteophytes"), null, false);
-    layers.setSelected(0);
     art = new KneeArt(sheet);
-    layers.onSelect(i -> art.setLayer(KneeArt.Layer.values()[i]));
     art.onPick(ctl::select);
-
     add(buildBody(), BorderLayout.CENTER);
     add(buildFooter(), BorderLayout.SOUTH);
-
     ctl.addListener(this::refresh);
     sheet.addListener(this::refreshCounts);
     refresh();
@@ -91,7 +91,6 @@ public final class MoaksPanel extends JPanel {
     body.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
 
     JLabel title = Widgets.label("Knee MOAKS", 17f, true, Theme.TEXT);
-    kneeBadge.setOpaque(false);
     kneeBadge.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
     kneeBadge.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     kneeBadge.setToolTipText("Click to switch between right and left knee");
@@ -101,12 +100,11 @@ public final class MoaksPanel extends JPanel {
         ctl.setKneeSide("Right".equals(sheet.kneeSide()) ? "Left" : "Right");
       }
     });
-    JComponent badge = new Badge(kneeBadge);
-    dotButton.setToolTipText("Click the image to drop a dot, then say where it is");
-    dotButton.addActionListener(e -> ctl.setDotMode(!ctl.dotMode()));
-    showDots.setToolTipText("Show or hide the MOAKS dots on the images");
+    showDots.setToolTipText("Show or hide the dots on the images");
     showDots.addActionListener(e -> ctl.setDotsVisible(!ctl.dotsVisible()));
-    body.add(left(Widgets.row(8, title, badge, Box.createHorizontalGlue(), showDots, dotButton)));
+    dotButton.setToolTipText("Click the image to drop a dot, then pick the structure");
+    dotButton.addActionListener(e -> ctl.setDotMode(!ctl.dotMode()));
+    body.add(left(Widgets.row(8, title, new Badge(kneeBadge), Box.createHorizontalGlue(), dotButton)));
     body.add(Box.createVerticalStrut(6));
     body.add(left(studyLine));
     body.add(Box.createVerticalStrut(8));
@@ -134,28 +132,36 @@ public final class MoaksPanel extends JPanel {
         }
       }
     });
-    JLabel vl = Widgets.label("Visit", 12f, false, Theme.TEXT_3);
-    JLabel rl = Widgets.label("Reader", 12f, false, Theme.TEXT_3);
-    body.add(left(Widgets.row(6, vl, visit, Box.createHorizontalStrut(8), rl, reader, Box.createHorizontalGlue())));
-    body.add(Box.createVerticalStrut(12));
+    body.add(left(Widgets.row(6, Widgets.label("Visit", 12f, false, Theme.TEXT_3), visit,
+        Box.createHorizontalStrut(8), Widgets.label("Reader", 12f, false, Theme.TEXT_3), reader,
+        Box.createHorizontalGlue())));
+    body.add(Box.createVerticalStrut(14));
 
-    tabs.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-    tabs.setPreferredSize(new Dimension(300, 30));
-    body.add(left(tabs));
-    body.add(Box.createVerticalStrut(10));
-    layers.setMaximumSize(new Dimension(280, 26));
-    layers.setPreferredSize(new Dimension(280, 26));
-    body.add(left(layers));
+    // The eight structures, as on the dot card, plus the whole knee
+    JPanel grid = new JPanel(new GridLayout(PARTS.length + 1, 2, 6, 6));
+    grid.setOpaque(false);
+    grid.add(head("Medial"));
+    grid.add(head("Lateral"));
+    for (int i = 0; i < PARTS.length; i++) {
+      for (String side : new String[] {"M", "L"}) {
+        StructureButton b = new StructureButton(KEYS[i] + "-" + side, PARTS[i]);
+        buttons.add(b);
+        grid.add(b);
+      }
+    }
+    grid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 5 * 50));
+    body.add(left(grid));
     body.add(Box.createVerticalStrut(6));
+    StructureButton whole = new StructureButton(Moaks.WHOLE_KNEE, "Whole knee · effusion, ligaments, cysts");
+    buttons.add(whole);
+    whole.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+    body.add(left(whole));
+    body.add(Box.createVerticalStrut(10));
 
     JPanel artRow = new JPanel(new BorderLayout());
     artRow.setOpaque(false);
     artRow.add(art, BorderLayout.CENTER);
     body.add(left(artRow));
-
-    softList.setOpaque(false);
-    softList.setLayout(new BoxLayout(softList, BoxLayout.Y_AXIS));
-    body.add(left(softList));
     body.add(Box.createVerticalStrut(8));
 
     editorHolder.setOpaque(false);
@@ -172,6 +178,12 @@ public final class MoaksPanel extends JPanel {
     return sp;
   }
 
+  private static JLabel head(String s) {
+    JLabel l = Widgets.label(s.toUpperCase(), 10.5f, true, Theme.TEXT_3);
+    l.setHorizontalAlignment(SwingConstants.CENTER);
+    return l;
+  }
+
   private JComponent buildFooter() {
     JPanel f = new JPanel(new BorderLayout(10, 0));
     f.setBackground(Theme.PANEL);
@@ -181,46 +193,33 @@ public final class MoaksPanel extends JPanel {
     JPanel text = new JPanel();
     text.setOpaque(false);
     text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
-    count.setAlignmentX(Component.LEFT_ALIGNMENT);
-    status.setAlignmentX(Component.LEFT_ALIGNMENT);
-    savedLine.setAlignmentX(Component.LEFT_ALIGNMENT);
-    text.add(count);
-    text.add(status);
-    text.add(savedLine);
+    for (JLabel l : new JLabel[] {count, status, savedLine}) {
+      l.setAlignmentX(Component.LEFT_ALIGNMENT);
+      text.add(l);
+    }
     f.add(ring, BorderLayout.WEST);
     f.add(text, BorderLayout.CENTER);
-
     undo.addActionListener(e -> sheet.undo());
     Pill folder = new Pill("Folder…", ButtonStyle.LINK);
     folder.addActionListener(e -> chooseFolder());
     Pill finish = new Pill("Finish knee", ButtonStyle.PRIMARY);
-    finish.setToolTipText("Save the knee; anything you did not touch is saved as normal");
+    finish.setToolTipText("Save the knee; anything you did not score is saved as normal");
     finish.addActionListener(e -> ctl.finish());
-    JPanel buttons = Widgets.row(2, undo, folder, Box.createHorizontalGlue(), finish);
-    buttons.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
-    f.add(buttons, BorderLayout.SOUTH);
+    JPanel buttonsRow = Widgets.row(2, undo, showDots, folder, Box.createHorizontalGlue(), finish);
+    buttonsRow.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
+    f.add(buttonsRow, BorderLayout.SOUTH);
     return f;
   }
 
   private void chooseFolder() {
     JFileChooser fc = new JFileChooser(ctl.store().folder().toFile());
     fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-    fc.setDialogTitle("Folder for the MOAKS CSV files");
+    fc.setDialogTitle("Folder for the MOAKS CSV file");
     if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
       Path p = fc.getSelectedFile().toPath();
       ctl.setFolder(p);
       ctl.saveNow(false);
     }
-  }
-
-  private void showTab(Tab t) {
-    tab = t;
-    tabs.setSelected(t.ordinal());
-    art.setTab(t);
-    layers.setVisible(t == Tab.BONE);
-    rebuildSoftList();
-    revalidate();
-    repaint();
   }
 
   // ---- refresh ----
@@ -231,9 +230,8 @@ public final class MoaksPanel extends JPanel {
       StudyInfo st = sheet.study();
       boolean has = !st.isEmpty();
       kneeBadge.setText(sheet.kneeSide().isEmpty() ? "Knee?" : sheet.kneeSide() + " knee");
-      String date = formatDate(st.studyDate());
       studyLine.setText(has
-          ? String.join(" · ", nonEmpty(st.patientId(), date, st.seriesDescription()))
+          ? String.join(" · ", nonEmpty(st.patientId(), formatDate(st.studyDate()), st.seriesDescription()))
           : "No study open");
       if (!sheet.visit().equals(String.valueOf(visit.getSelectedItem()))) {
         visit.setSelectedItem(sheet.visit());
@@ -243,31 +241,22 @@ public final class MoaksPanel extends JPanel {
       }
       emptyNote.setVisible(!has);
       boolean on = ctl.dotMode();
-      dotButton.setText(on ? (ctl.armed() != null ? "Placing " + LocationEditor.shortCode(ctl.armed()) + "…" : "Dot mode on") : "MOAKS dot");
+      Moaks.Structure armed = Moaks.structure(ctl.armed());
+      dotButton.setText(on ? (armed != null ? "Click: " + armed.name() : "Click the image…") : "MOAKS dot");
       dotButton.setActive(on);
-      showDots.setText(ctl.dotsVisible() ? "Hide dots" : "Show dots");
       dotButton.revalidate();
+      showDots.setText(ctl.dotsVisible() ? "Hide dots" : "Show dots");
 
       String sel = ctl.selected();
-      if (sel != null) {
-        Moaks.Location loc = Moaks.location(sel);
-        if (loc != null && loc.tab() != tab) {
-          showTab(loc.tab());
-        }
-        if (loc != null && loc.group().equals("OSTEOPHYTE") && art.layer() != KneeArt.Layer.OSTEOPHYTES) {
-          layers.setSelected(2);
-          art.setLayer(KneeArt.Layer.OSTEOPHYTES);
-        }
-      }
-      art.setSelected(sel);
-      String state = sel + "|" + ctl.armed() + "|" + st.studyKey();
+      art.setStructure(sel);
+      art.getParent().setVisible(sel != null && !Moaks.WHOLE_KNEE.equals(sel));
+      String state = sel + "|" + st.studyKey();
       if (!state.equals(shownState)) {
         shownState = state;
         rebuildEditor(sel);
       }
-      rebuildSoftList();
       refreshCounts();
-      status.setText(has ? "Untouched items save as normal" : " ");
+      status.setText(has ? "Anything not scored is saved as normal" : " ");
       savedLine.setText(has ? ctl.saveStatus() : " ");
     } finally {
       updating = false;
@@ -280,85 +269,92 @@ public final class MoaksPanel extends JPanel {
     int n = sheet.enteredCount();
     int total = ScoreSheet.totalCount();
     ring.setValue(n / (double) total);
-    count.setText(n + " of " + total + " recorded");
+    count.setText(n + " of " + total + " scored");
     undo.setEnabled(sheet.canUndo());
-    if (tab == Tab.SOFT) {
-      rebuildSoftList();
+    for (StructureButton b : buttons) {
+      b.repaint();
     }
   }
 
   private void rebuildEditor(String sel) {
     editorHolder.removeAll();
-    if (sel != null && Moaks.location(sel) != null) {
+    if (sel != null && Moaks.structure(sel) != null) {
       Card c = new Card(new BorderLayout(), Theme.CARD, 22, 14);
-      c.add(new LocationEditor(ctl, sel, false), BorderLayout.CENTER);
+      c.add(new StructureEditor(ctl, sel), BorderLayout.CENTER);
       editorHolder.add(c, BorderLayout.CENTER);
     } else if (!sheet.study().isEmpty()) {
-      JLabel hint = Widgets.label(
-          "<html>Click a subregion on the knee to score it, or press <b>MOAKS dot</b> and click the image.</html>",
-          12.5f, false, Theme.TEXT_2);
-      editorHolder.add(hint, BorderLayout.CENTER);
+      editorHolder.add(Widgets.label(
+          "<html>Pick a structure above, or press <b>MOAKS dot</b> and click the image.</html>",
+          12.5f, false, Theme.TEXT_2), BorderLayout.CENTER);
     }
     editorHolder.revalidate();
   }
 
-  private void rebuildSoftList() {
-    softList.removeAll();
-    softList.setVisible(tab == Tab.SOFT);
-    if (tab != Tab.SOFT) {
-      return;
-    }
-    Card card = new Card(null, Theme.CARD, 22, 6);
-    card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-    List<String> keys = KneeArt.softOrder();
-    for (int i = 0; i < keys.size(); i++) {
-      String key = keys.get(i);
-      card.add(softRow(key, i == keys.size() - 1));
-    }
-    softList.add(card);
-    softList.revalidate();
-  }
+  // ---- the structure buttons ----
 
-  private JComponent softRow(String key, boolean last) {
-    Moaks.Location loc = Moaks.location(key);
-    String item = Moaks.itemsAt(key).get(0).id();
-    boolean entered = sheet.isEntered(item);
-    int grade = entered ? sheet.grade(item) : -2;
-    Color fill = !entered ? new Color(0x48484A) : grade < 0 ? Theme.NEUTRAL_FINDING : Theme.grade(grade);
-    JLabel num = new JLabel(String.valueOf(KneeArt.pinNumber(key)), JLabel.CENTER) {
-      @Override
-      protected void paintComponent(java.awt.Graphics g) {
-        java.awt.Graphics2D g2 = Theme.smooth(g);
-        g2.setColor(fill);
-        g2.fillOval(0, 0, getWidth() - 1, getHeight() - 1);
-        g2.dispose();
-        super.paintComponent(g);
+  /** A structure in the grid: name, how much is scored, worst score as a coloured dot. */
+  private final class StructureButton extends JButton {
+    private final String key;
+
+    StructureButton(String key, String text) {
+      super(text);
+      this.key = key;
+      setContentAreaFilled(false);
+      setBorderPainted(false);
+      setFocusPainted(false);
+      setOpaque(false);
+      setRolloverEnabled(true);
+      setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+      setFont(Theme.font(13f, true));
+      Moaks.Structure st = Moaks.structure(key);
+      getAccessibleContext().setAccessibleName(st == null ? text : st.name());
+      addActionListener(e -> ctl.select(key));
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+      return new Dimension(140, 44);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+      Graphics2D g2 = Theme.smooth(g);
+      float w = getWidth();
+      float h = getHeight();
+      boolean sel = key.equals(ctl.selected());
+      RoundRectangle2D.Float r = new RoundRectangle2D.Float(0.5f, 0.5f, w - 1, h - 1, 14, 14);
+      g2.setColor(sel ? Theme.alpha(Theme.ACCENT, 0.22) : getModel().isRollover() ? Theme.RAISED : Theme.CARD);
+      g2.fill(r);
+      if (sel || isFocusOwner()) {
+        g2.setColor(Theme.ACCENT);
+        g2.setStroke(new BasicStroke(sel ? 1.5f : 2f));
+        g2.draw(r);
       }
-    };
-    num.setFont(Theme.font(10.5f, true));
-    num.setForeground(entered ? Theme.TEXT_DARK : Theme.TEXT);
-    num.setPreferredSize(new Dimension(20, 20));
-    num.setMaximumSize(new Dimension(20, 20));
-    JLabel name = Widgets.label(loc.name(), 12.5f, false, new Color(0xE5E5EA));
-    String v = entered ? sheet.summary(key) : "—";
-    JLabel val = Widgets.label(v, 12.5f, true, entered && grade > 0 ? Theme.TEXT : Theme.TEXT_3);
-    JPanel row = Widgets.row(10, num, name, Box.createHorizontalGlue(), val);
-    boolean sel = key.equals(ctl.selected());
-    row.setOpaque(sel);
-    row.setBackground(Theme.alpha(Theme.ACCENT, 0.22));
-    row.setBorder(BorderFactory.createCompoundBorder(
-        BorderFactory.createMatteBorder(0, 0, last ? 0 : 1, 0, Theme.LINE),
-        BorderFactory.createEmptyBorder(7, 8, 7, 8)));
-    row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-    row.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        ctl.select(key);
+      int grade = sheet.structureGrade(key);
+      int done = sheet.structureEntered(key);
+      Moaks.Structure st = Moaks.structure(key);
+      int total = st == null ? 0 : st.itemIds().size();
+      int dots = sheet.dotsAt(key).size();
+      // status dot
+      Ellipse2D pip = new Ellipse2D.Float(10, h / 2 - 5, 10, 10);
+      if (done > 0) {
+        g2.setColor(grade >= 0 ? Theme.grade(grade) : Theme.NEUTRAL_FINDING);
+        g2.fill(pip);
+      } else {
+        g2.setColor(Theme.CHIP_LINE);
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.draw(pip);
       }
-    });
-    row.getAccessibleContext().setAccessibleName(loc.name() + ", " + v);
-    row.setAlignmentX(Component.LEFT_ALIGNMENT);
-    return row;
+      g2.setFont(getFont());
+      FontMetrics fm = g2.getFontMetrics();
+      g2.setColor(Theme.TEXT);
+      g2.drawString(getText(), 28, h / 2f - 2);
+      g2.setFont(Theme.font(10.5f, false));
+      g2.setColor(Theme.TEXT_3);
+      String sub = done + " of " + total + (dots > 0 ? " · " + dots + (dots == 1 ? " dot" : " dots") : "");
+      g2.drawString(sub, 28, h / 2f + fm.getAscent() - 2);
+      g2.dispose();
+    }
   }
 
   // ---- helpers ----
@@ -371,7 +367,7 @@ public final class MoaksPanel extends JPanel {
   }
 
   private static List<String> nonEmpty(String... s) {
-    java.util.ArrayList<String> l = new java.util.ArrayList<>();
+    List<String> l = new ArrayList<>();
     for (String x : s) {
       if (x != null && !x.isBlank()) {
         l.add(x);
@@ -391,12 +387,11 @@ public final class MoaksPanel extends JPanel {
       super(new BorderLayout());
       setOpaque(false);
       add(l);
-      setMaximumSize(getPreferredSize());
     }
 
     @Override
-    protected void paintComponent(java.awt.Graphics g) {
-      java.awt.Graphics2D g2 = Theme.smooth(g);
+    protected void paintComponent(Graphics g) {
+      Graphics2D g2 = Theme.smooth(g);
       g2.setColor(Theme.ACCENT_SOFT);
       g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
       g2.dispose();

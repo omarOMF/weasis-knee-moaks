@@ -77,6 +77,15 @@ public final class Moaks {
   /** A place a dot can be put: a subregion, a meniscal segment, a soft tissue structure. */
   public record Location(String key, String name, String group, Tab tab) {}
 
+  /**
+   * What the reader picks when dropping a dot: one of eight structures (patella, trochlea, femur,
+   * tibia; medial or lateral), plus the whole knee for soft tissue. Each holds every MOAKS item
+   * scored under it.
+   */
+  public record Structure(String key, String name, String part, String side, List<String> itemIds) {}
+
+  public static final String WHOLE_KNEE = "WHOLE";
+
   public static final List<String> CARTILAGE_CODES =
       List.of("0.0", "1.0", "1.1", "2.0", "2.1", "2.2", "3.0", "3.1", "3.2", "3.3");
 
@@ -92,6 +101,7 @@ public final class Moaks {
 
   private static final Map<String, Location> LOCATIONS = new LinkedHashMap<>();
   private static final Map<String, Item> ITEMS = new LinkedHashMap<>();
+  private static final Map<String, Structure> STRUCTURES = new LinkedHashMap<>();
 
   static {
     // Cartilage and BML subregions
@@ -254,6 +264,65 @@ public final class Moaks {
     }
     loc("LB", "Loose bodies", "SOFT TISSUE", Tab.SOFT);
     item("lb", Category.LOOSE_BODY, "LB", "Loose bodies", presence("present", "Present"));
+
+    // The eight structures of the dot card, and the whole knee
+    structure("PAT-M", "Medial patella", "Patella", "Medial",
+        "cart.PM", "bml.PM", "ost.OstPM", "ost.OstPS", "ost.OstPI");
+    structure("PAT-L", "Lateral patella", "Patella", "Lateral",
+        "cart.PL", "bml.PL", "ost.OstPL", "ost.OstPS", "ost.OstPI");
+    structure("TRO-M", "Medial trochlea", "Trochlea", "Medial", "cart.MFa", "bml.MFa", "ost.OstTrM");
+    structure("TRO-L", "Lateral trochlea", "Trochlea", "Lateral", "cart.LFa", "bml.LFa", "ost.OstTrL");
+    structure("FEM-M", "Medial femur", "Femur", "Medial",
+        "cart.MFc", "cart.MFp", "bml.MFc", "bml.MFp", "ost.OstFCM", "ost.OstFPM");
+    structure("FEM-L", "Lateral femur", "Femur", "Lateral",
+        "cart.LFc", "cart.LFp", "bml.LFc", "bml.LFp", "ost.OstFCL", "ost.OstFPL");
+    structure("TIB-M", "Medial tibia", "Tibia", "Medial",
+        "cart.MTa", "cart.MTc", "cart.MTp", "bml.MTa", "bml.MTc", "bml.MTp", "bml.TSS", "ost.OstTM",
+        "men.MM-AH", "men.MM-B", "men.MM-PH", "ext.MM-med", "ext.MM-ant");
+    structure("TIB-L", "Lateral tibia", "Tibia", "Lateral",
+        "cart.LTa", "cart.LTc", "cart.LTp", "bml.LTa", "bml.LTc", "bml.LTp", "bml.TSS", "ost.OstTL",
+        "men.LM-AH", "men.LM-B", "men.LM-PH", "ext.LM-lat", "ext.LM-ant");
+    List<String> whole = new ArrayList<>();
+    for (Item i : ITEMS.values()) {
+      if (LOCATIONS.get(i.location()).tab() == Tab.SOFT) {
+        whole.add(i.id());
+      }
+    }
+    STRUCTURES.put(WHOLE_KNEE, new Structure(WHOLE_KNEE, "Whole knee", "Whole knee", "",
+        List.copyOf(whole)));
+  }
+
+  private static void structure(String key, String name, String part, String side, String... ids) {
+    for (String id : ids) {
+      if (!ITEMS.containsKey(id)) {
+        throw new IllegalStateException("Unknown item " + id + " in " + key);
+      }
+    }
+    STRUCTURES.put(key, new Structure(key, name, part, side, List.of(ids)));
+  }
+
+  /** The eight structures offered when a dot is dropped, then the whole knee. */
+  public static List<Structure> structures() {
+    return List.copyOf(STRUCTURES.values());
+  }
+
+  public static Structure structure(String key) {
+    return key == null ? null : STRUCTURES.get(key);
+  }
+
+  /** The structure a subregion belongs to (MFc -> FEM-M), for dots saved by older versions. */
+  public static String structureOfLocation(String locationKey) {
+    if (STRUCTURES.containsKey(locationKey)) {
+      return locationKey;
+    }
+    for (Structure s : STRUCTURES.values()) {
+      for (String id : s.itemIds()) {
+        if (ITEMS.get(id).location().equals(locationKey)) {
+          return s.key();
+        }
+      }
+    }
+    return null;
   }
 
   private Moaks() {}

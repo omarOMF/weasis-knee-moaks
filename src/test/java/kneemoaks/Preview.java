@@ -71,35 +71,36 @@ public final class Preview {
     s.set("cart.MTp", "score", "1.1");
     Dot d = Dot.create(0, 0, 0, "", "", "", 0, 0);
     s.addDot(d);
-    s.assignDot(d.id(), "MFc");
+    s.assignDot(d.id(), "FEM-M");
     s.toggleFlag("men.MM-PH", "morph", "horizontal");
     s.toggleFlag("men.MM-PH", "morph", "partial_mac");
-    s.set("ext.LM-lat", "grade", "1");
+    s.set("men.MM-AH", "morph", "");
+    s.set("ext.MM-med", "grade", "1");
     s.set("syn.effusion", "grade", "2");
     s.set("syn.hoffa", "grade", "1");
     s.markNormal("lig.ACL");
-    s.markNormal("lig.PCL");
     s.set("peri.POP", "present", "present");
     s.set("ost.OstFCM", "grade", "2");
 
     MoaksPanel panel = new MoaksPanel(ctl);
-    ctl.select("MFc");
-    render(panel, 400, 1180, out.resolve("panel-bone.png").toFile());
-    ctl.select("MM-PH");
-    render(panel, 400, 1050, out.resolve("panel-menisci.png").toFile());
-    ctl.select("EFF");
-    render(panel, 400, 1200, out.resolve("panel-soft.png").toFile());
-    ctl.select("OstFCM");
-    render(panel, 400, 1000, out.resolve("panel-osteophytes.png").toFile());
+    ctl.select("FEM-M");
+    render(panel, 400, 1500, out.resolve("panel-femur.png").toFile());
+    ctl.select("TIB-M");
+    render(panel, 400, 1900, out.resolve("panel-tibia.png").toFile());
+    ctl.select("WHOLE");
+    render(panel, 400, 1500, out.resolve("panel-whole.png").toFile());
+    ctl.select(null);
+    render(panel, 400, 900, out.resolve("panel-start.png").toFile());
 
-    JComponent where = PreviewAccess.where(ctl);
-    render(where, 330, where.getPreferredSize().height, out.resolve("popup-where.png").toFile());
-    JComponent scores = PreviewAccess.scores(ctl, "MFc");
-    render(scores, 330, scores.getPreferredSize().height, out.resolve("popup-scores.png").toFile());
+    JComponent card = PreviewAccess.dotCard(ctl);
+    card.setSize(card.getPreferredSize());
+    render(card, card.getPreferredSize().width, card.getPreferredSize().height,
+        out.resolve("dot-card.png").toFile());
     System.out.println("Wrote previews to " + out.toAbsolutePath());
   }
 
   static void render(JComponent c, int w, int h, File file) throws Exception {
+    invalidateAll(c);
     c.setSize(w, h);
     layout(c);
     layout(c);
@@ -111,6 +112,15 @@ public final class Preview {
     c.printAll(g);
     g.dispose();
     ImageIO.write(img, "png", file);
+  }
+
+  private static void invalidateAll(Component c) {
+    c.invalidate();
+    if (c instanceof Container ct) {
+      for (Component ch : ct.getComponents()) {
+        invalidateAll(ch);
+      }
+    }
   }
 
   private static void layout(Component c) {

@@ -14,6 +14,8 @@ import java.awt.geom.Point2D;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Locale;
 import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import kneemoaks.model.Dot;
 import kneemoaks.ui.MoaksController;
@@ -25,8 +27,8 @@ import org.weasis.dicom.codec.DicomImageElement;
 import org.weasis.dicom.codec.geometry.GeometryOfSlice;
 
 /**
- * A transparent layer on one Weasis view that draws the MOAKS dots and, in dot mode, catches the
- * clicks that place them. Dots are stored in patient coordinates, so the same dot shows on the
+ * A transparent layer on one Weasis view that draws the MOAKS dots, opens a dot's structure in
+ * the panel when it is clicked, and in dot mode places new dots. Dots are stored in patient coordinates, so the same dot shows on the
  * axial, sagittal and coronal views; off the current slice it is drawn faded with its distance.
  */
 final class DotOverlay extends JComponent {
@@ -37,51 +39,106 @@ final class DotOverlay extends JComponent {
   private final ViewCanvas<DicomImageElement> view;
   private final MoaksController ctl;
   private boolean dotMode;
-  private final MouseAdapter mouse;
   private Point pressed;
+  private boolean ours;
 
   DotOverlay(ViewCanvas<DicomImageElement> view, MoaksController ctl) {
     this.view = view;
     this.ctl = ctl;
     setOpaque(false);
-    // No listeners while dot mode is off, so every click and drag reaches Weasis as usual.
-    mouse = new MouseAdapter() {
+    // The layer listens all the time so a click on a dot opens it in the panel. Every other
+    // mouse event is passed on to the Weasis view underneath, so scrolling, window/level,
+    // panning and Weasis's own menus work as usual. (Wheel events go straight to the view.)
+    MouseAdapter mouse = new MouseAdapter() {
       @Override
       public void mousePressed(MouseEvent e) {
         pressed = e.getPoint();
+        ours = dotMode && SwingUtilities.isLeftMouseButton(e) || dotAt(e.getPoint()) != null;
+        if (!ours) {
+          forward(e);
+        }
       }
 
       @Override
       public void mouseReleased(MouseEvent e) {
-        if (pressed != null && pressed.distance(e.getPoint()) < 5) {
-          if (SwingUtilities.isRightMouseButton(e) || e.isPopupTrigger()) {
-            Dot d = dotAt(e.getPoint());
-            if (d != null) {
-              ctl.deleteDot(d.id());
-            } else {
-              ctl.setDotMode(false); // right-click elsewhere: leave dot mode
-            }
-          } else if (SwingUtilities.isLeftMouseButton(e)) {
-            click(e.getPoint());
-          }
+        if (!ours) {
+          forward(e);
+          pressed = null;
+          return;
         }
+        boolean click = pressed != null && pressed.distance(e.getPoint()) < 5;
         pressed = null;
+        ours = false;
+        if (!click) {
+          return;
+        }
+        Dot hit = dotAt(e.getPoint());
+        if (hit != null && (SwingUtilities.isRightMouseButton(e) || e.isPopupTrigger())) {
+          showMenu(hit, e.getPoint());
+        } else if (hit != null) {
+          ctl.dotClicked(hit);
+        } else if (dotMode && SwingUtilities.isLeftMouseButton(e)) {
+          place(e.getPoint());
+        }
+      }
+
+      @Override
+      public void mouseClicked(MouseEvent e) {
+        if (!ours && dotAt(e.getPoint()) == null && !dotMode) {
+          forward(e);
+        }
+      }
+
+      @Override
+      public void mouseDragged(MouseEvent e) {
+        if (!ours) {
+          forward(e);
+        }
+      }
+
+      @Override
+      public void mouseMoved(MouseEvent e) {
+        setCursor(dotAt(e.getPoint()) != null
+            ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            : dotMode ? Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) : null);
+        forward(e);
+      }
+
+      @Override
+      public void mouseEntered(MouseEvent e) {
+        forward(e);
+      }
+
+      @Override
+      public void mouseExited(MouseEvent e) {
+        forward(e);
       }
     };
+    addMouseListener(mouse);
+    addMouseMotionListener(mouse);
+  }
+
+  private void forward(MouseEvent e) {
+    java.awt.Container parent = getParent();
+    if (parent != null) {
+      parent.dispatchEvent(SwingUtilities.convertMouseEvent(this, e, parent));
+    }
+  }
+
+  private void showMenu(Dot d, Point p) {
+    JPopupMenu menu = new JPopupMenu();
+    JMenuItem open = new JMenuItem("Score " + ctl.dotLabel(d) + " in the panel");
+    open.addActionListener(a -> ctl.dotClicked(d));
+    JMenuItem delete = new JMenuItem("Delete dot");
+    delete.addActionListener(a -> ctl.deleteDot(d.id()));
+    menu.add(open);
+    menu.add(delete);
+    menu.show(this, p.x, p.y);
   }
 
   void setDotMode(boolean on) {
-    if (on == dotMode) {
-      return;
-    }
     dotMode = on;
-    if (on) {
-      addMouseListener(mouse);
-      setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
-    } else {
-      removeMouseListener(mouse);
-      setCursor(null);
-    }
+    setCursor(on ? Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) : null);
   }
 
   void detach() {
@@ -93,16 +150,10 @@ final class DotOverlay extends JComponent {
 
   // ---- placing ----
 
-  private void click(Point p) {
+  private void place(Point p) {
     DicomImageElement img = view.getImage();
     GeometryOfSlice g = img == null ? null : img.getSliceGeometry();
     if (g == null) {
-      return;
-    }
-    // A click on an existing dot reopens it.
-    Dot hit = dotAt(p);
-    if (hit != null) {
-      ctl.dotClicked(hit, this, p);
       return;
     }
     Point2D ip = view.getImageCoordinatesFromMouse(p.x, p.y);

@@ -21,6 +21,7 @@ public final class SelfCheck {
     search();
     kneeSide();
     csvRoundTrip();
+    structures();
     System.out.println("All " + passed + " checks passed");
   }
 
@@ -89,6 +90,33 @@ public final class SelfCheck {
     check(s.dotsAt("MFc").size() == 1, "dot assigned to MFc");
   }
 
+  static void structures() {
+    check(Moaks.structures().size() == 9, "8 structures plus the whole knee");
+    java.util.Set<String> covered = new java.util.HashSet<>();
+    for (Moaks.Structure st : Moaks.structures()) {
+      covered.addAll(st.itemIds());
+    }
+    check(covered.size() == Moaks.items().size(), "every item sits under a structure: " + covered.size());
+    check(Moaks.structureOfLocation("MFc").equals("FEM-M"), "MFc is in the medial femur");
+    check(Moaks.structureOfLocation("MFa").equals("TRO-M"), "MFa is in the medial trochlea");
+    check(Moaks.structure("TIB-M").itemIds().contains("men.MM-PH"), "medial meniscus under medial tibia");
+    ScoreSheet s = new ScoreSheet();
+    s.reset(StudyInfo.NONE, "Right", "Baseline", "AB");
+    s.set("cart.MFc", "score", "2.1");
+    s.set("bml.MFp", "size", "1");
+    check(s.structureGrade("FEM-M") == 2, "structure grade is the worst item");
+    check(s.structureEntered("FEM-M") == 2, "two items entered under FEM-M");
+    check(s.structureSummary("FEM-M").equals("MFc Cart 2.1, MFp BML 1"),
+        "structure summary: " + s.structureSummary("FEM-M"));
+    s.markStructureNormal("FEM-M");
+    check(s.structureEntered("FEM-M") == 6 && s.get("cart.MFc", "score").equals("2.1"),
+        "mark the rest normal keeps entered scores");
+    Dot d = Dot.create(0, 0, 0, "", "", "", 0, 0);
+    s.addDot(d);
+    s.assignDot(d.id(), "TIB-L");
+    check(s.dotsAt("TIB-L").size() == 1, "dot assigned to a structure");
+  }
+
   static void search() {
     check(Moaks.search("mfc").get(0).key().equals("MFc"), "search mfc");
     check(Moaks.search("MM PH").get(0).key().equals("MM-PH"), "search MM PH");
@@ -142,7 +170,7 @@ public final class SelfCheck {
     check(back.get("cart.MFc", "score").equals("3.2"), "loaded cartilage");
     check(back.get("men.MM-PH", "morph").equals("horizontal"), "loaded flags");
     check(!back.isEntered("cart.MFa"), "normals filled at finish are not marked entered");
-    check(back.dots().size() == 1 && back.dots().get(0).location().equals("MFc"), "loaded dot");
+    check(back.dots().size() == 1 && back.dots().get(0).location().equals("FEM-M"), "loaded dot (old subregion dots map to their structure)");
     check(Math.abs(back.dots().get(0).x() + 12.5) < 1e-9, "dot x kept");
 
     ScoreSheet cd = new ScoreSheet();

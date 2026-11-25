@@ -63,6 +63,7 @@ public final class Widgets {
     private int hover = -1;
     private int focusIndex = 0;
     private IntConsumer onSelect = i -> {};
+    private List<Color> selectedColors;
 
     public Segmented(List<String> labels, List<String> tips, boolean large) {
       this.labels = List.copyOf(labels);
@@ -170,6 +171,12 @@ public final class Widgets {
       repaint();
     }
 
+    /** Fills the chosen segment with its own colour (score colours) instead of grey. */
+    public void setSelectedColors(List<Color> colors) {
+      selectedColors = colors;
+      repaint();
+    }
+
     private int indexAt(int x) {
       int n = labels.size();
       int w = getWidth() - 4;
@@ -181,7 +188,15 @@ public final class Widgets {
     }
 
     @Override
+    public Dimension getMinimumSize() {
+      return new Dimension(40, getPreferredSize().height);
+    }
+
+    @Override
     public Dimension getPreferredSize() {
+      if (isPreferredSizeSet()) {
+        return super.getPreferredSize();
+      }
       FontMetrics fm = getFontMetrics(getFont());
       int seg = 0;
       for (String l : labels) {
@@ -203,7 +218,8 @@ public final class Widgets {
         float x = 2 + i * segW;
         RoundRectangle2D.Float r = new RoundRectangle2D.Float(x, 2, segW, h - 4, large ? 14 : 12, large ? 14 : 12);
         if (i == selected) {
-          g2.setColor(Theme.SELECTED);
+          g2.setColor(selectedColors != null && i < selectedColors.size() && selectedColors.get(i) != null
+              ? selectedColors.get(i) : Theme.SELECTED);
           g2.fill(r);
         } else if (i == hover) {
           g2.setColor(Theme.alpha(Theme.SELECTED, 0.35));
@@ -222,7 +238,8 @@ public final class Widgets {
         g2.setFont(getFont());
         FontMetrics fm = g2.getFontMetrics();
         String s = labels.get(i);
-        g2.setColor(i == selected ? Color.WHITE : Theme.TEXT_2);
+        boolean colored = selectedColors != null && i < selectedColors.size() && selectedColors.get(i) != null;
+        g2.setColor(i == selected ? (colored ? Theme.TEXT_DARK : Color.WHITE) : Theme.TEXT_2);
         g2.drawString(s, x + (segW - fm.stringWidth(s)) / 2f, (h + fm.getAscent() - fm.getDescent()) / 2f);
       }
       g2.dispose();

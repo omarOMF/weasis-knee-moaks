@@ -15,16 +15,16 @@ Next time, open Weasis with:
 (Weasis opened another way starts without the plugin.)
 
 Scoring
-- Click a subregion on the knee drawing, then tap its scores. Typing 21 sets cartilage 2.1.
-- Dots: press "MOAKS dot" and click the finding on any image. A card asks where it is; pick
-  the subregion and score it right there. Or choose a subregion in the panel and press
-  "Add dot", then click the image.
-- "MOAKS dot" places one dot, then the mouse goes back to normal. Press it again for the next.
-- Remove a dot: "Delete dot" in its card (or the Delete key), the x next to it in the panel,
-  or, with "MOAKS dot" on, right-click the dot. "Hide dots" in the panel hides them all.
-- Dots show on every view of the study (sagittal, coronal, axial). Off the current slice they
-  are drawn faded with their distance in mm. "Go to" scrolls the views to a dot.
-- Anything you do not touch is saved as normal when you press "Finish knee".
+- While reading: press "MOAKS dot", click the finding on the image, and pick one of eight
+  structures (patella, trochlea, femur, tibia; medial or lateral). That's all; keep reading.
+- To score: click a dot on the image (or a structure in the panel). The panel shows everything
+  under that structure: cartilage, bone marrow lesions, osteophytes, and for the tibia the
+  meniscus and extrusion. "Rest normal" marks everything you did not score there as normal.
+- Soft tissue (effusion, Hoffa, ligaments, cysts and bursae, loose bodies) is under "Whole knee".
+- Right-click a dot to delete it. "Hide dots" (bottom of the panel) hides them all.
+- Dots show on every view of the study. Off the current slice they are faded, with their
+  distance in mm. "Go to" next to a dot scrolls the views to it.
+- Anything not scored is saved as normal when you press "Finish knee".
 
 Files (Documents/KneeMOAKS, change with "Folder..." in the panel)
 - knee_moaks_long.csv   one row per scored field

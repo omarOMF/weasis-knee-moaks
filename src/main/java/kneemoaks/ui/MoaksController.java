@@ -49,7 +49,7 @@ public final class MoaksController {
   private boolean dirty;
   private final Timer autosave;
   private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
-  private PickerPopup popup;
+  private StructurePopup popup;
 
   public MoaksController(ViewerHost host) {
     this.host = host;
@@ -169,7 +169,7 @@ public final class MoaksController {
     return dotMode;
   }
 
-  /** "Add dot" in the panel: the next click on an image becomes a dot of this location. */
+  /** "Add dot" in the panel: the next click on an image becomes a dot of this structure. */
   public void arm(String location) {
     armed = location;
     setDotMode(true);
@@ -206,7 +206,7 @@ public final class MoaksController {
     // One dot per press of "MOAKS dot": the next click goes back to Weasis.
     setDotMode(false);
     closePopup();
-    popup = new PickerPopup(this, dot.id());
+    popup = new StructurePopup(this, dot.id());
     Point p = new Point(onView);
     SwingUtilities.convertPointToScreen(p, view);
     try {
@@ -237,20 +237,15 @@ public final class MoaksController {
     fire();
   }
 
-  /** A click on an existing dot: reopen its scores in the pop-up. */
-  public void dotClicked(Dot dot, Component view, Point onView) {
-    setDotMode(false);
+  /** A click on an existing dot: open its structure in the side panel. */
+  public void dotClicked(Dot dot) {
     closePopup();
-    popup = new PickerPopup(this, dot.id());
     if (dot.location() != null) {
-      popup.showScores(dot.location());
+      select(dot.location());
     }
-    Point p = new Point(onView);
-    SwingUtilities.convertPointToScreen(p, view);
-    popup.showNear(view, p);
   }
 
-  void popupClosed(PickerPopup p) {
+  void popupClosed(StructurePopup p) {
     if (popup == p) {
       popup = null;
     }
@@ -258,7 +253,7 @@ public final class MoaksController {
 
   public void closePopup() {
     if (popup != null) {
-      popup.close(true);
+      popup.close();
       popup = null;
     }
   }
@@ -273,25 +268,18 @@ public final class MoaksController {
     return host == null ? "" : host.describe(d);
   }
 
-  /** Label drawn next to a dot on the image. */
+  /** Label drawn next to a dot on the image: its structure, e.g. "Medial femur". */
   public String dotLabel(Dot d) {
     if (d.location() == null) {
       return "Where is this?";
     }
-    String s = sheet.summary(d.location());
-    return s.isEmpty() ? d.location() : d.location() + " · " + s;
+    Moaks.Structure st = Moaks.structure(d.location());
+    return st == null ? d.location() : st.name();
   }
 
-  /** Colour grade of a dot: the worst finding at its location; -1 if none. */
+  /** Colour grade of a dot: the worst finding under its structure; -1 if none. */
   public int dotGrade(Dot d) {
-    if (d.location() == null) {
-      return -1;
-    }
-    int g = -1;
-    for (Moaks.Item i : Moaks.itemsAt(d.location())) {
-      g = Math.max(g, sheet.grade(i.id()));
-    }
-    return g;
+    return d.location() == null ? -1 : sheet.structureGrade(d.location());
   }
 
   // ---- saving ----

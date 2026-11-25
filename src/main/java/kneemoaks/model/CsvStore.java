@@ -108,11 +108,13 @@ public final class CsvStore {
     List<Map<String, String>> dotRows = new ArrayList<>();
     for (Dot d : sheet.dots()) {
       Map<String, String> row = new LinkedHashMap<>(head);
+      Moaks.Structure st = Moaks.structure(d.location());
       Moaks.Location loc = d.location() == null ? null : Moaks.location(d.location());
       row.put("dot_id", d.id());
       row.put("location", d.location() == null ? "" : d.location());
-      row.put("location_name", loc == null ? "" : loc.name());
-      row.put("scores", d.location() == null ? "" : sheet.summary(d.location()));
+      row.put("location_name", st != null ? st.name() : loc == null ? "" : loc.name());
+      row.put("scores", d.location() == null ? ""
+          : st != null ? sheet.structureSummary(st.key()) : sheet.summary(d.location()));
       row.put("x_mm", fmt(d.x()));
       row.put("y_mm", fmt(d.y()));
       row.put("z_mm", fmt(d.z()));
@@ -151,10 +153,10 @@ public final class CsvStore {
       }
       found = true;
       try {
-        String loc = nz(row.get("location"));
+        String loc = Moaks.structureOfLocation(nz(row.get("location")));
         dots.add(new Dot(
             row.get("dot_id"),
-            loc.isEmpty() || Moaks.location(loc) == null ? null : loc,
+            loc,
             Double.parseDouble(row.get("x_mm")),
             Double.parseDouble(row.get("y_mm")),
             Double.parseDouble(row.get("z_mm")),
