@@ -3,8 +3,10 @@ Knee MOAKS for Weasis 4.8.1
 
 Install (once)
 1. Quit Weasis.
-2. Right-click "Install-Knee-MOAKS.command" and choose Open (the first time macOS asks
-   because the file came from the internet), then click Open again.
+2. Right-click "Install-Knee-MOAKS.command" and choose Open, then click Open again.
+   If macOS refuses ("unidentified developer"), either allow it in System Settings >
+   Privacy & Security > Open Anyway, or open Terminal and run:
+     bash ~/Downloads/weasis-knee-moaks/Install-Knee-MOAKS.command
 3. Weasis opens with the plugin. The "Knee MOAKS" panel is in the right-hand tool area of the
    DICOM viewer, and a "MOAKS dot" button is in the toolbar.
 
