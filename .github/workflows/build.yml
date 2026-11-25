@@ -15,19 +15,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get the plugin code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: plugin
 
       - name: Get Weasis ${{ env.WEASIS_VERSION }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: nroduit/Weasis
           ref: v${{ env.WEASIS_VERSION }}
           path: weasis
 
       - name: Set up Java 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
