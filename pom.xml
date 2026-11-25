@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Knee MOAKS plugin for Weasis.
+  Built against the Weasis source of the same version (see .github/workflows/build.yml):
+    mvn -Drevision=4.8.1 -Dchangelist= package
+  with the Weasis repository checked out next to this one, in ../weasis
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>weasis-parent</artifactId>
+    <groupId>org.weasis</groupId>
+    <!--suppress MavenPropertyInParent -->
+    <version>${revision}${changelist}</version>
+    <relativePath>../weasis/weasis-parent/pom.xml</relativePath>
+  </parent>
+
+  <groupId>io.github.omaromf</groupId>
+  <artifactId>weasis-knee-moaks</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <name>Knee MOAKS scoring [${project.artifactId}]</name>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>biz.aQute.bnd</groupId>
+        <artifactId>bnd-maven-plugin</artifactId>
+        <configuration>
+          <bnd>
+            Bundle-Name: Knee MOAKS
+            Bundle-SymbolicName: io.github.omaromf.weasis.kneemoaks
+            -noextraheaders: true
+            -includeresource.all = -src/main/resources
+            Import-Package: org.slf4j;version=!,*
+          </bnd>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.weasis.core</groupId>
+      <artifactId>weasis-core</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.weasis.thirdparty</groupId>
+      <artifactId>docking-frames</artifactId>
+      <version>${dockingframes.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.weasis.dicom</groupId>
+      <artifactId>weasis-dicom-viewer2d</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.weasis.dicom</groupId>
+      <artifactId>weasis-dicom-codec</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>
