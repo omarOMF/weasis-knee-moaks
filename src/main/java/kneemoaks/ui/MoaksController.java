@@ -34,6 +34,9 @@ public final class MoaksController {
 
     /** Where the series shown in a dot was placed, e.g. "Sag 14"; empty if unknown. */
     String describe(Dot dot);
+
+    /** Brings the Knee MOAKS panel to the front, open on the right. */
+    void showPanel();
   }
 
   private static final Preferences PREFS = Preferences.userRoot().node("kneemoaks");
@@ -82,7 +85,8 @@ public final class MoaksController {
   }
 
   public static Path defaultFolder() {
-    return Path.of(System.getProperty("user.home"), "Documents", "KneeMOAKS");
+    // In the home folder: macOS asks before an app may use Documents or Desktop.
+    return Path.of(System.getProperty("user.home"), "KneeMOAKS");
   }
 
   public void setHost(ViewerHost host) {
@@ -266,6 +270,14 @@ public final class MoaksController {
     selectedDot = null;
     for (Dot d : sheet.dots()) {
       sheet.removeDot(d.id());
+    }
+  }
+
+  /** A double-click on a dot: open its structure and bring the panel to the front. */
+  public void openDot(Dot dot) {
+    dotClicked(dot);
+    if (host != null) {
+      host.showPanel();
     }
   }
 

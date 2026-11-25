@@ -318,6 +318,19 @@ public final class ScoreSheet {
     fire();
   }
 
+  /** Clears every score under a structure (back to untouched); dots stay. One undo step. */
+  public void clearStructure(String structureKey) {
+    Moaks.Structure st = Moaks.structure(structureKey);
+    if (st == null) {
+      return;
+    }
+    pushUndo();
+    for (String id : st.itemIds()) {
+      values.remove(id);
+    }
+    fire();
+  }
+
   /** Number of items entered, and the total. */
   public int enteredCount() {
     return values.size();

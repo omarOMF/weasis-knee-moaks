@@ -111,6 +111,10 @@ public final class SelfCheck {
     s.markStructureNormal("FEM-M");
     check(s.structureEntered("FEM-M") == 6 && s.get("cart.MFc", "score").equals("2.1"),
         "mark the rest normal keeps entered scores");
+    s.clearStructure("FEM-M");
+    check(s.structureEntered("FEM-M") == 0 && !s.isEntered("cart.MFc"), "clear a structure");
+    s.undo();
+    check(s.get("cart.MFc", "score").equals("2.1"), "undo a clear");
     Dot d = Dot.create(0, 0, 0, "", "", "", 0, 0);
     s.addDot(d);
     s.assignDot(d.id(), "TIB-L");

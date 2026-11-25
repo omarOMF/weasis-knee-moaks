@@ -56,6 +56,9 @@ public final class Preview {
       public String describe(Dot dot) {
         return "Sag 14";
       }
+
+      @Override
+      public void showPanel() {}
     });
     ctl.setFolder(Files.createTempDirectory("kneemoaks-preview"));
     ctl.openStudy(new StudyInfo("[Patient ID]", "", "20261120", "1.2.3", "1.2.3.4", "SAG PD FS RT", "R"));

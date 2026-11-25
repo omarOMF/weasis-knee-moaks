@@ -68,7 +68,10 @@ public final class StructureEditor extends JPanel {
     Pill normal = new Pill("Rest normal", ButtonStyle.SECONDARY);
     normal.setToolTipText("Mark everything not yet scored here as normal");
     normal.addActionListener(e -> sheet.markStructureNormal(structure.key()));
-    add(left(Widgets.row(8, title, Box.createHorizontalGlue(), normal)));
+    Pill clear = new Pill("Clear", ButtonStyle.SECONDARY);
+    clear.setToolTipText("Clear every score in " + structure.name() + " (Undo brings them back)");
+    clear.addActionListener(e -> sheet.clearStructure(structure.key()));
+    add(left(Widgets.row(6, title, Box.createHorizontalGlue(), clear, normal)));
     add(Box.createVerticalStrut(8));
     if (!Moaks.WHOLE_KNEE.equals(structure.key())) {
       dotRow.setOpaque(false);

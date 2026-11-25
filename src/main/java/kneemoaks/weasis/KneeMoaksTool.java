@@ -5,7 +5,9 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import bibliothek.gui.dock.common.mode.ExtendedMode;
 import java.util.Objects;
+import javax.swing.SwingUtilities;
 import kneemoaks.ui.MoaksController;
 import kneemoaks.ui.MoaksPanel;
 import org.weasis.core.ui.docking.PluginTool;
@@ -23,6 +25,7 @@ public final class KneeMoaksTool extends PluginTool {
         Objects.requireNonNull(KneeMoaksTool.class.getResource("/icon/svg/kneemoaks.svg"))));
     setDockableWidth(380);
     ctl = KneeMoaks.acquire();
+    KneeMoaks.setTool(this);
     setLayout(new BorderLayout());
     MoaksPanel panel = new MoaksPanel(ctl);
     panel.setPreferredSize(new Dimension(380, 900));
@@ -39,7 +42,19 @@ public final class KneeMoaksTool extends PluginTool {
     // The panel lays itself out vertically wherever it is docked.
   }
 
+  /** Shows the panel open on the right (not folded to an icon) and in front. */
+  void bringToFront() {
+    showDockable();
+    SwingUtilities.invokeLater(() -> {
+      if (dockable.getExtendedMode() == ExtendedMode.MINIMIZED) {
+        dockable.setExtendedMode(ExtendedMode.NORMALIZED);
+      }
+      dockable.toFront();
+    });
+  }
+
   void dispose() {
+    KneeMoaks.setTool(null);
     KneeMoaks.release();
   }
 }

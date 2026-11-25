@@ -20,7 +20,8 @@ Next time, open Weasis with:
 Scoring
 - While reading: press "MOAKS dot", click the finding on the image, and pick one of eight
   structures (patella, trochlea, femur, tibia; medial or lateral). That's all; keep reading.
-- To score: click a dot on the image (or a structure in the panel). The panel shows everything
+- To score: double-click a dot on the image (or click a structure in the panel). The panel
+  comes to the front, open on the right. "Clear" empties everything scored in that structure. The panel shows everything
   under that structure: cartilage, bone marrow lesions, osteophytes, and for the tibia the
   meniscus and extrusion. "Rest normal" marks everything you did not score there as normal.
 - Soft tissue (effusion, Hoffa, ligaments, cysts and bursae, loose bodies) is under "Whole knee".
@@ -31,8 +32,8 @@ Scoring
   distance in mm. "Go to" next to a dot scrolls the views to it.
 - Anything not scored is saved as normal when you press "Finish knee".
 
-Files (Documents/KneeMOAKS; "Files" at the bottom of the panel opens the folder, right-click
-it to choose another; if macOS does not let Weasis use Documents, they go to ~/KneeMOAKS)
+Files (in your home folder: Finder > Go > Home > KneeMOAKS; "Files" at the bottom of the panel
+opens the folder, right-click it to choose another)
 - knee_moaks_long.csv   one row per scored field
 - knee_moaks_wide.csv   one row per knee read
 - knee_moaks_dots.csv   one row per dot, position in patient mm

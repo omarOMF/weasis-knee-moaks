@@ -15,6 +15,7 @@ import javax.swing.Timer;
 import kneemoaks.model.Dot;
 import kneemoaks.model.StudyInfo;
 import kneemoaks.ui.MoaksController;
+import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.joml.Vector3d;
 import org.weasis.core.api.gui.util.ActionW;
@@ -24,6 +25,7 @@ import org.weasis.core.api.media.data.MediaSeries;
 import org.weasis.core.ui.editor.image.ImageViewerPlugin;
 import org.weasis.core.ui.editor.image.ViewCanvas;
 import org.weasis.core.ui.editor.image.ViewerPlugin;
+import org.weasis.dicom.codec.DcmMediaReader;
 import org.weasis.dicom.codec.DicomImageElement;
 import org.weasis.dicom.codec.TagD;
 import org.weasis.dicom.codec.geometry.GeometryOfSlice;
@@ -130,6 +132,12 @@ final class WeasisHost implements MoaksController.ViewerHost {
 
   static String text(DicomImageElement img, int tag) {
     Object v = TagD.getTagValue(img, tag);
+    if (v == null && img.getMediaReader() instanceof DcmMediaReader reader) {
+      // Some tags live at the study or patient level in Weasis: read them from the file header.
+      Attributes dcm = reader.getDicomObject();
+      String raw = dcm == null ? null : dcm.getString(tag);
+      return raw == null ? "" : raw.trim();
+    }
     if (v == null) {
       return "";
     }
@@ -152,6 +160,14 @@ final class WeasisHost implements MoaksController.ViewerHost {
     dotMode = on;
     for (DotOverlay o : overlays.values()) {
       o.setDotMode(on);
+    }
+  }
+
+  @Override
+  public void showPanel() {
+    KneeMoaksTool t = KneeMoaks.tool();
+    if (t != null) {
+      t.bringToFront();
     }
   }
 

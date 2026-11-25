@@ -297,7 +297,10 @@ public final class MoaksPanel extends JPanel {
       }
       refreshCounts();
       status.setText(has ? "Anything not scored is saved as normal" : " ");
-      savedLine.setText((has ? ctl.saveStatus() + " · " : "") + "Knee MOAKS " + MoaksController.buildLabel());
+      String saved = ctl.saveStatus();
+      boolean bad = saved.startsWith("Could not") || saved.startsWith("Nothing saved");
+      savedLine.setForeground(bad ? Theme.grade(3) : Theme.TEXT_3);
+      savedLine.setText((has ? saved + " · " : "") + "Knee MOAKS " + MoaksController.buildLabel());
     } finally {
       updating = false;
     }

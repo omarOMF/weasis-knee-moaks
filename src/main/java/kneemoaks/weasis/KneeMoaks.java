@@ -8,6 +8,7 @@ final class KneeMoaks {
   private static MoaksController controller;
   private static WeasisHost host;
   private static int users;
+  private static KneeMoaksTool tool;
 
   private KneeMoaks() {}
 
@@ -19,6 +20,14 @@ final class KneeMoaks {
     }
     users++;
     return controller;
+  }
+
+  static synchronized void setTool(KneeMoaksTool t) {
+    tool = t;
+  }
+
+  static synchronized KneeMoaksTool tool() {
+    return tool;
   }
 
   static synchronized void release() {

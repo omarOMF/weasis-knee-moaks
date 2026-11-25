@@ -88,6 +88,8 @@ final class DotOverlay extends JComponent {
         Dot hit = dotAt(e.getPoint());
         if (hit != null && (SwingUtilities.isRightMouseButton(e) || e.isPopupTrigger())) {
           showMenu(hit, e.getPoint());
+        } else if (hit != null && e.getClickCount() >= 2) {
+          ctl.openDot(hit); // double-click: open the scores in the panel
         } else if (hit != null) {
           ctl.dotClicked(hit);
         } else if (dotMode && SwingUtilities.isLeftMouseButton(e)) {
