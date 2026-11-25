@@ -41,6 +41,7 @@ public final class MoaksPanel extends JPanel {
       new JComboBox<>(new String[] {"Baseline", "Month 12", "Month 24", "Month 48"});
   private final JTextField reader = new JTextField(5);
   private final Pill dotButton = new Pill("MOAKS dot", ButtonStyle.SECONDARY);
+  private final Pill showDots = new Pill("Hide dots", ButtonStyle.LINK);
   private final Segmented tabs;
   private final Segmented layers;
   private final KneeArt art;
@@ -103,7 +104,9 @@ public final class MoaksPanel extends JPanel {
     JComponent badge = new Badge(kneeBadge);
     dotButton.setToolTipText("Click the image to drop a dot, then say where it is");
     dotButton.addActionListener(e -> ctl.setDotMode(!ctl.dotMode()));
-    body.add(left(Widgets.row(8, title, badge, Box.createHorizontalGlue(), dotButton)));
+    showDots.setToolTipText("Show or hide the MOAKS dots on the images");
+    showDots.addActionListener(e -> ctl.setDotsVisible(!ctl.dotsVisible()));
+    body.add(left(Widgets.row(8, title, badge, Box.createHorizontalGlue(), showDots, dotButton)));
     body.add(Box.createVerticalStrut(6));
     body.add(left(studyLine));
     body.add(Box.createVerticalStrut(8));
@@ -242,6 +245,7 @@ public final class MoaksPanel extends JPanel {
       boolean on = ctl.dotMode();
       dotButton.setText(on ? (ctl.armed() != null ? "Placing " + LocationEditor.shortCode(ctl.armed()) + "…" : "Dot mode on") : "MOAKS dot");
       dotButton.setActive(on);
+      showDots.setText(ctl.dotsVisible() ? "Hide dots" : "Show dots");
       dotButton.revalidate();
 
       String sel = ctl.selected();

@@ -48,13 +48,22 @@ final class DotOverlay extends JComponent {
     mouse = new MouseAdapter() {
       @Override
       public void mousePressed(MouseEvent e) {
-        pressed = SwingUtilities.isLeftMouseButton(e) ? e.getPoint() : null;
+        pressed = e.getPoint();
       }
 
       @Override
       public void mouseReleased(MouseEvent e) {
         if (pressed != null && pressed.distance(e.getPoint()) < 5) {
-          click(e.getPoint());
+          if (SwingUtilities.isRightMouseButton(e) || e.isPopupTrigger()) {
+            Dot d = dotAt(e.getPoint());
+            if (d != null) {
+              ctl.deleteDot(d.id());
+            } else {
+              ctl.setDotMode(false); // right-click elsewhere: leave dot mode
+            }
+          } else if (SwingUtilities.isLeftMouseButton(e)) {
+            click(e.getPoint());
+          }
         }
         pressed = null;
       }
@@ -91,12 +100,10 @@ final class DotOverlay extends JComponent {
       return;
     }
     // A click on an existing dot reopens it.
-    for (Dot d : ctl.sheet().dots()) {
-      Point2D at = toView(d, g);
-      if (at != null && at.distance(p) <= 10 && Math.abs(distanceToPlane(vec(d), g)) <= halfThickness(g)) {
-        ctl.dotClicked(d, this, p);
-        return;
-      }
+    Dot hit = dotAt(p);
+    if (hit != null) {
+      ctl.dotClicked(hit, this, p);
+      return;
     }
     Point2D ip = view.getImageCoordinatesFromMouse(p.x, p.y);
     Vector3d p3 = g.getPosition(ip);
@@ -107,6 +114,23 @@ final class DotOverlay extends JComponent {
         WeasisHost.text(img, Tag.SOPInstanceUID),
         ip.getX(), ip.getY());
     ctl.dotPlaced(d, this, p);
+  }
+
+  /** The dot drawn under a point of this view, if any. */
+  private Dot dotAt(Point p) {
+    DicomImageElement img = view.getImage();
+    GeometryOfSlice g = img == null ? null : img.getSliceGeometry();
+    if (g == null || !ctl.dotsVisible()) {
+      return null;
+    }
+    for (Dot d : ctl.sheet().dots()) {
+      Point2D at = toView(d, g);
+      if (at != null && at.distance(p) <= 10 && sameFrame(d, img)
+          && Math.abs(distanceToPlane(vec(d), g)) <= MAX_DISTANCE_MM) {
+        return d;
+      }
+    }
+    return null;
   }
 
   // ---- geometry ----
@@ -149,7 +173,7 @@ final class DotOverlay extends JComponent {
   protected void paintComponent(Graphics graphics) {
     DicomImageElement img = view.getImage();
     GeometryOfSlice g = img == null ? null : img.getSliceGeometry();
-    if (g == null || ctl.sheet().dots().isEmpty()) {
+    if (g == null || ctl.sheet().dots().isEmpty() || !ctl.dotsVisible()) {
       return;
     }
     String seriesStudy = WeasisHost.text(img, Tag.StudyInstanceUID);

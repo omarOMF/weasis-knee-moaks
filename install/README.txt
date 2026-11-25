@@ -19,6 +19,9 @@ Scoring
 - Dots: press "MOAKS dot" and click the finding on any image. A card asks where it is; pick
   the subregion and score it right there. Or choose a subregion in the panel and press
   "Add dot", then click the image.
+- "MOAKS dot" places one dot, then the mouse goes back to normal. Press it again for the next.
+- Remove a dot: "Delete dot" in its card (or the Delete key), the x next to it in the panel,
+  or, with "MOAKS dot" on, right-click the dot. "Hide dots" in the panel hides them all.
 - Dots show on every view of the study (sagittal, coronal, axial). Off the current slice they
   are drawn faded with their distance in mm. "Go to" scrolls the views to a dot.
 - Anything you do not touch is saved as normal when you press "Finish knee".

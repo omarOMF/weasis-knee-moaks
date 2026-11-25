@@ -44,6 +44,7 @@ public final class MoaksController {
   private String selected;
   private String armed;
   private boolean dotMode;
+  private boolean dotsVisible = true;
   private String saveStatus = "Not saved yet";
   private boolean dirty;
   private final Timer autosave;
@@ -202,15 +203,43 @@ public final class MoaksController {
       setDotMode(false);
       return;
     }
+    // One dot per press of "MOAKS dot": the next click goes back to Weasis.
+    setDotMode(false);
     closePopup();
     popup = new PickerPopup(this, dot.id());
     Point p = new Point(onView);
     SwingUtilities.convertPointToScreen(p, view);
-    popup.showNear(view, p);
+    try {
+      popup.showNear(view, p);
+    } catch (RuntimeException e) {
+      // If the card cannot open, do not leave an unnamed dot behind.
+      sheet.removeDot(dot.id());
+      popup = null;
+      throw e;
+    }
+  }
+
+  /** Removes a dot (from the card, a right-click on it, or the panel). */
+  public void deleteDot(String dotId) {
+    closePopup();
+    sheet.removeDot(dotId);
+  }
+
+  public boolean dotsVisible() {
+    return dotsVisible;
+  }
+
+  public void setDotsVisible(boolean on) {
+    dotsVisible = on;
+    if (host != null) {
+      host.refreshViews();
+    }
+    fire();
   }
 
   /** A click on an existing dot: reopen its scores in the pop-up. */
   public void dotClicked(Dot dot, Component view, Point onView) {
+    setDotMode(false);
     closePopup();
     popup = new PickerPopup(this, dot.id());
     if (dot.location() != null) {

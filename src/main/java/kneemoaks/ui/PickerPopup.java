@@ -217,7 +217,10 @@ public final class PickerPopup {
     Pill change = new Pill("Change", ButtonStyle.LINK);
     change.addActionListener(e -> showWhere(""));
     JLabel name = Widgets.label(loc == null ? "" : loc.name(), 12f, false, Theme.TEXT_2);
-    body.add(left(Widgets.row(8, title, Box.createHorizontalGlue(), change)));
+    Pill delete = new Pill("Delete dot", ButtonStyle.TINTED).tint(Theme.grade(3));
+    delete.setToolTipText("Remove this dot from the images (Delete key)");
+    delete.addActionListener(e -> deleteDot());
+    body.add(left(Widgets.row(8, title, Box.createHorizontalGlue(), change, delete)));
     body.add(left(name));
     body.add(Box.createVerticalStrut(10));
     LocationEditor editor = new LocationEditor(ctl, location, true);
@@ -264,6 +267,18 @@ public final class PickerPopup {
       @Override
       public void actionPerformed(ActionEvent e) {
         close(true);
+      }
+    });
+    for (int key : new int[] {KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE}) {
+      rp.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+          .put(KeyStroke.getKeyStroke(key, 0), "moaks-delete");
+    }
+    rp.getActionMap().put("moaks-delete", new AbstractAction() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        if (scoresFor != null) {
+          deleteDot();
+        }
       }
     });
     dialog.addWindowListener(new WindowAdapter() {
@@ -316,6 +331,11 @@ public final class PickerPopup {
       dialog.pack();
       dialog.setLocation(at);
     }
+  }
+
+  private void deleteDot() {
+    ctl.sheet().removeDot(dotId);
+    close(true);
   }
 
   /** Closes the card. A dot that never got a location is removed. */
