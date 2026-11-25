@@ -262,6 +262,7 @@ public final class StructureEditor extends JPanel {
     }
     if (!Moaks.WHOLE_KNEE.equals(structure.key())) {
       dotRow.removeAll();
+      dotRow.setLayout(new BoxLayout(dotRow, BoxLayout.Y_AXIS));
       boolean armed = structure.key().equals(ctl.armed());
       Pill add = new Pill(armed ? "Click the image…" : "Add dot", ButtonStyle.TINTED).tint(Theme.ACCENT);
       add.setToolTipText("Place a dot for this structure on the image");
@@ -272,7 +273,6 @@ public final class StructureEditor extends JPanel {
           ctl.arm(structure.key());
         }
       });
-      dotRow.add(add);
       int g = sheet.structureGrade(structure.key());
       Color c = g >= 0 ? Theme.grade(g) : Theme.ACCENT;
       List<Dot> dots = sheet.dotsAt(structure.key());
@@ -280,19 +280,21 @@ public final class StructureEditor extends JPanel {
       for (Dot d : dots) {
         n++;
         String where = ctl.describe(d);
-        Pill go = new Pill((where.isEmpty() ? "Dot " + n : where) + " · Go to", ButtonStyle.TINTED)
+        Pill go = new Pill((where.isEmpty() ? "Dot " + n : "Dot on " + where) + " · Go to", ButtonStyle.TINTED)
             .tint(c).dot(c);
         go.addActionListener(e -> ctl.goTo(d));
-        Pill del = new Pill("×", ButtonStyle.LINK);
+        Pill del = new Pill("Delete", ButtonStyle.TINTED).tint(Theme.grade(3));
         del.setToolTipText("Delete this dot");
         del.getAccessibleContext().setAccessibleName("Delete dot " + n);
-        del.setPreferredSize(new Dimension(26, 30));
-        del.setMaximumSize(new Dimension(26, 30));
         del.addActionListener(e -> ctl.deleteDot(d.id()));
-        dotRow.add(Box.createHorizontalStrut(6));
-        dotRow.add(go);
-        dotRow.add(del);
+        JPanel line = Widgets.row(6, go, del, Box.createHorizontalGlue());
+        line.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dotRow.add(line);
+        dotRow.add(Box.createVerticalStrut(6));
       }
+      JPanel addLine = Widgets.row(6, add, Box.createHorizontalGlue());
+      addLine.setAlignmentX(Component.LEFT_ALIGNMENT);
+      dotRow.add(addLine);
       dotRow.revalidate();
       dotRow.repaint();
     }

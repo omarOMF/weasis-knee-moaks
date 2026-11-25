@@ -45,6 +45,7 @@ public final class MoaksController {
   private String armed;
   private boolean dotMode;
   private boolean dotsVisible = true;
+  private String selectedDot;
   private String saveStatus = "Not saved yet";
   private boolean dirty;
   private final Timer autosave;
@@ -236,6 +237,9 @@ public final class MoaksController {
   /** Removes a dot (from the card, a right-click on it, or the panel). */
   public void deleteDot(String dotId) {
     closePopup();
+    if (dotId.equals(selectedDot)) {
+      selectedDot = null;
+    }
     sheet.removeDot(dotId);
   }
 
@@ -251,8 +255,26 @@ public final class MoaksController {
     fire();
   }
 
-  /** A click on an existing dot: open its structure in the side panel. */
+  /** The dot last clicked on the image; the Delete key removes it. */
+  public String selectedDot() {
+    return selectedDot;
+  }
+
+  /** Removes every dot of this knee read. */
+  public void deleteAllDots() {
+    closePopup();
+    selectedDot = null;
+    for (Dot d : sheet.dots()) {
+      sheet.removeDot(d.id());
+    }
+  }
+
+  /** A click on an existing dot: select it and open its structure in the side panel. */
   public void dotClicked(Dot dot) {
+    selectedDot = dot.id();
+    if (host != null) {
+      host.refreshViews();
+    }
     closePopup();
     if (dot.location() != null) {
       select(dot.location());

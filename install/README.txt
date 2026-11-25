@@ -24,7 +24,9 @@ Scoring
   under that structure: cartilage, bone marrow lesions, osteophytes, and for the tibia the
   meniscus and extrusion. "Rest normal" marks everything you did not score there as normal.
 - Soft tissue (effusion, Hoffa, ligaments, cysts and bursae, loose bodies) is under "Whole knee".
-- Right-click a dot to delete it. "Hide dots" (bottom of the panel) hides them all.
+- Delete a dot: click it and press Delete; or right-click (two-finger / Control-click) it and
+  choose Delete dot; or press the red Delete next to it in the panel. "Hide dots" (bottom of
+  the panel) hides them all; the right-click menu can also delete all dots on the knee.
 - Dots show on every view of the study. Off the current slice they are faded, with their
   distance in mm. "Go to" next to a dot scrolls the views to it.
 - Anything not scored is saved as normal when you press "Finish knee".

@@ -66,6 +66,7 @@ final class WeasisHost implements MoaksController.ViewerHost {
         DotOverlay o = new DotOverlay(v, ctl);
         overlays.put(c, o);
         c.add(o);
+        c.addKeyListener(o.keys);
         o.setBounds(0, 0, c.getWidth(), c.getHeight());
         c.addComponentListener(new ComponentAdapter() {
           @Override

@@ -41,6 +41,7 @@ final class DotOverlay extends JComponent {
   private boolean dotMode;
   private Point pressed;
   private boolean ours;
+  private boolean menuShown;
 
   DotOverlay(ViewCanvas<DicomImageElement> view, MoaksController ctl) {
     this.view = view;
@@ -53,9 +54,17 @@ final class DotOverlay extends JComponent {
       @Override
       public void mousePressed(MouseEvent e) {
         pressed = e.getPoint();
-        ours = dotMode && SwingUtilities.isLeftMouseButton(e) || dotAt(e.getPoint()) != null;
+        Dot hit = dotAt(e.getPoint());
+        ours = dotMode && SwingUtilities.isLeftMouseButton(e) || hit != null;
         if (!ours) {
           forward(e);
+          return;
+        }
+        // Right-click, two-finger click or Control-click on a dot: the menu (macOS reports the
+        // popup trigger on press).
+        if (hit != null && (e.isPopupTrigger() || SwingUtilities.isRightMouseButton(e) || e.isControlDown())) {
+          menuShown = true;
+          showMenu(hit, e.getPoint());
         }
       }
 
@@ -69,6 +78,10 @@ final class DotOverlay extends JComponent {
         boolean click = pressed != null && pressed.distance(e.getPoint()) < 5;
         pressed = null;
         ours = false;
+        if (menuShown) {
+          menuShown = false;
+          return;
+        }
         if (!click) {
           return;
         }
@@ -127,14 +140,42 @@ final class DotOverlay extends JComponent {
 
   private void showMenu(Dot d, Point p) {
     JPopupMenu menu = new JPopupMenu();
-    JMenuItem open = new JMenuItem("Score " + ctl.dotLabel(d) + " in the panel");
-    open.addActionListener(a -> ctl.dotClicked(d));
     JMenuItem delete = new JMenuItem("Delete dot");
     delete.addActionListener(a -> ctl.deleteDot(d.id()));
-    menu.add(open);
+    JMenuItem open = new JMenuItem("Score " + ctl.dotLabel(d) + " in the panel");
+    open.addActionListener(a -> ctl.dotClicked(d));
+    JMenuItem all = new JMenuItem("Delete all dots on this knee…");
+    all.addActionListener(a -> {
+      int n = ctl.sheet().dots().size();
+      int ok = javax.swing.JOptionPane.showConfirmDialog(this,
+          "Delete all " + n + " dots on this knee? Scores are kept.", "Delete all dots",
+          javax.swing.JOptionPane.OK_CANCEL_OPTION);
+      if (ok == javax.swing.JOptionPane.OK_OPTION) {
+        ctl.deleteAllDots();
+      }
+    });
     menu.add(delete);
+    menu.add(open);
+    menu.addSeparator();
+    menu.add(all);
     menu.show(this, p.x, p.y);
   }
+
+  /** Delete or Backspace on the view removes the dot last clicked. Added to the Weasis view. */
+  final java.awt.event.KeyListener keys = new java.awt.event.KeyAdapter() {
+    @Override
+    public void keyPressed(java.awt.event.KeyEvent e) {
+      int k = e.getKeyCode();
+      String sel = ctl.selectedDot();
+      if (sel != null && ctl.sheet().dot(sel) != null
+          && (k == java.awt.event.KeyEvent.VK_DELETE || k == java.awt.event.KeyEvent.VK_BACK_SPACE)) {
+        ctl.deleteDot(sel);
+        e.consume();
+      } else if (k == java.awt.event.KeyEvent.VK_ESCAPE && dotMode) {
+        ctl.setDotMode(false);
+      }
+    }
+  };
 
   void setDotMode(boolean on) {
     dotMode = on;
@@ -144,6 +185,7 @@ final class DotOverlay extends JComponent {
   void detach() {
     setDotMode(false);
     if (getParent() != null) {
+      getParent().removeKeyListener(keys);
       getParent().remove(this);
     }
   }
@@ -254,6 +296,11 @@ final class DotOverlay extends JComponent {
             + String.format(Locale.ROOT, " · %.1f mm from slice", Math.abs(dist));
       }
       paintDot(g2, at, c, label, onSlice);
+      if (d.id().equals(ctl.selectedDot())) {
+        g2.setColor(java.awt.Color.WHITE);
+        g2.setStroke(new BasicStroke(2f));
+        g2.draw(new Ellipse2D.Double(at.getX() - 11, at.getY() - 11, 22, 22));
+      }
     }
     g2.dispose();
   }
