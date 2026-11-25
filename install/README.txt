@@ -31,7 +31,8 @@ Scoring
   distance in mm. "Go to" next to a dot scrolls the views to it.
 - Anything not scored is saved as normal when you press "Finish knee".
 
-Files (Documents/KneeMOAKS, change with "Folder..." in the panel)
+Files (Documents/KneeMOAKS; "Files" at the bottom of the panel opens the folder, right-click
+it to choose another; if macOS does not let Weasis use Documents, they go to ~/KneeMOAKS)
 - knee_moaks_long.csv   one row per scored field
 - knee_moaks_wide.csv   one row per knee read
 - knee_moaks_dots.csv   one row per dot, position in patient mm

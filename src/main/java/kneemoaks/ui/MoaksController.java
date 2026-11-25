@@ -324,26 +324,60 @@ public final class MoaksController {
     return saveStatus;
   }
 
-  public void saveNow(boolean finished) {
+  /** Saves; returns null when saved, else the reason it could not. */
+  public String saveNow(boolean finished) {
     autosave.stop();
     if (sheet.study().isEmpty()) {
-      return;
+      saveStatus = "Nothing saved: no study is open in the viewer";
+      fire();
+      return "No knee MRI is open in the viewer, so there is nothing to save yet. "
+          + "Open the study, click an image, then score it.";
     }
+    String problem = null;
     try {
       store.save(sheet, finished);
+    } catch (java.nio.file.FileSystemException e) {
+      // macOS can refuse Weasis access to Documents: use a folder in the home folder instead.
+      Path fallback = Path.of(System.getProperty("user.home"), "KneeMOAKS");
+      if (!fallback.equals(store.folder())) {
+        try {
+          setFolder(fallback);
+          store.save(sheet, finished);
+        } catch (IOException e2) {
+          problem = e2.getMessage();
+        }
+      } else {
+        problem = e.getMessage();
+      }
+    } catch (IOException e) {
+      problem = e.getMessage();
+    }
+    if (problem == null) {
       dirty = false;
       String time = java.time.LocalTime.now().withNano(0).toString().substring(0, 5);
-      saveStatus = (finished ? "Finished and saved " : "Saved ") + time;
-    } catch (IOException e) {
-      saveStatus = "Could not save: " + e.getMessage()
-          + " (is the CSV open in another program?)";
+      saveStatus = (finished ? "Finished and saved " : "Saved ") + time + " to " + shortPath(store.folder());
+    } else {
+      saveStatus = "Could not save: " + problem;
     }
     fire();
+    return problem == null ? null : "Could not save the CSV: " + problem
+        + "\nIf the file is open in Excel or Numbers, close it and press Finish knee again.";
   }
 
-  /** Finish knee: untouched items are written as normal. */
-  public void finish() {
-    saveNow(true);
+  static String shortPath(Path p) {
+    String home = System.getProperty("user.home");
+    String s = p.toString();
+    return s.startsWith(home) ? "~" + s.substring(home.length()) : s;
+  }
+
+  /** Finish knee: untouched items are written as normal. Returns null on success, else why not. */
+  public String finish() {
+    return saveNow(true);
+  }
+
+  /** The CSV file with one row per scored item. */
+  public Path csvFile() {
+    return store.folder().resolve(CsvStore.LONG_FILE);
   }
 
   // ---- listeners ----

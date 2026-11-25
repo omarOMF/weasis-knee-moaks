@@ -200,15 +200,55 @@ public final class MoaksPanel extends JPanel {
     f.add(ring, BorderLayout.WEST);
     f.add(text, BorderLayout.CENTER);
     undo.addActionListener(e -> sheet.undo());
-    Pill folder = new Pill("Folder…", ButtonStyle.LINK);
-    folder.addActionListener(e -> chooseFolder());
+    Pill folder = new Pill("Files", ButtonStyle.LINK);
+    folder.setToolTipText("Show the CSV files in Finder (right-click to choose another folder)");
+    folder.addActionListener(e -> showFiles());
+    folder.addMouseListener(new MouseAdapter() {
+      @Override
+      public void mousePressed(MouseEvent e) {
+        if (e.isPopupTrigger() || javax.swing.SwingUtilities.isRightMouseButton(e)) {
+          chooseFolder();
+        }
+      }
+    });
     Pill finish = new Pill("Finish knee", ButtonStyle.PRIMARY);
     finish.setToolTipText("Save the knee; anything you did not score is saved as normal");
-    finish.addActionListener(e -> ctl.finish());
+    finish.addActionListener(e -> finishKnee());
     JPanel buttonsRow = Widgets.row(2, undo, showDots, folder, Box.createHorizontalGlue(), finish);
     buttonsRow.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
     f.add(buttonsRow, BorderLayout.SOUTH);
     return f;
+  }
+
+  private void finishKnee() {
+    String problem = ctl.finish();
+    if (problem != null) {
+      javax.swing.JOptionPane.showMessageDialog(this, problem, "Knee MOAKS",
+          javax.swing.JOptionPane.WARNING_MESSAGE);
+      return;
+    }
+    Object[] options = {"Show in Finder", "OK"};
+    int choice = javax.swing.JOptionPane.showOptionDialog(this,
+        "Saved. Anything not scored was saved as normal.\n\nFile: "
+            + MoaksController.shortPath(ctl.csvFile())
+            + "\n(also knee_moaks_wide.csv and knee_moaks_dots.csv in the same folder)",
+        "Knee MOAKS", javax.swing.JOptionPane.DEFAULT_OPTION,
+        javax.swing.JOptionPane.INFORMATION_MESSAGE, null, options, options[1]);
+    if (choice == 0) {
+      showFiles();
+    }
+  }
+
+  /** Opens the CSV folder in Finder (or the system file browser). */
+  private void showFiles() {
+    try {
+      java.nio.file.Files.createDirectories(ctl.store().folder());
+      java.awt.Desktop.getDesktop().open(ctl.store().folder().toFile());
+    } catch (Exception ex) {
+      javax.swing.JOptionPane.showMessageDialog(this,
+          "The CSV files are in " + ctl.store().folder() + "\n(" + ex.getMessage() + ")",
+          "Knee MOAKS", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+    }
   }
 
   private void chooseFolder() {
