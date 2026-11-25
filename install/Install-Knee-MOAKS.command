@@ -7,21 +7,26 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 DEST="$HOME/Weasis-plugins/knee-moaks"
 mkdir -p "$DEST"
 
-JAR="$(ls "$HERE"/weasis-knee-moaks-*.jar 2>/dev/null | head -1)"
+JAR="$(ls -t "$HERE"/weasis-knee-moaks*.jar 2>/dev/null | head -1)"
 if [ -n "$JAR" ]; then
-  cp "$JAR" "$DEST/weasis-knee-moaks.jar"
+  # Weasis keeps a cached copy of each plugin file name it has loaded, so every build has its
+  # own name; remove the older ones.
+  rm -f "$DEST"/weasis-knee-moaks*.jar
+  cp "$JAR" "$DEST/"
 fi
-if [ ! -f "$DEST/weasis-knee-moaks.jar" ]; then
+NAME="$(ls -t "$DEST"/weasis-knee-moaks*.jar 2>/dev/null | head -1)"
+if [ -z "$NAME" ]; then
   echo "The plugin file weasis-knee-moaks-*.jar was not found next to this script."
   exit 1
 fi
+NAME="$(basename "$NAME")"
 
 cat > "$DEST/knee-moaks.json" <<JSON
 {
   "weasisPreferences": [
     {
       "code": "felix.auto.start.125",
-      "value": "file://$DEST/weasis-knee-moaks.jar",
+      "value": "file://$DEST/$NAME",
       "description": "Knee MOAKS scoring panel"
     }
   ]

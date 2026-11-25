@@ -10,6 +10,9 @@ Install (once)
 3. Weasis opens with the plugin. The "Knee MOAKS" panel is in the right-hand tool area of the
    DICOM viewer, and a "MOAKS dot" button is in the toolbar.
 
+To update: download the new zip and run Install-Knee-MOAKS.command again. The build number
+shows at the bottom of the panel.
+
 Next time, open Weasis with:
    ~/Weasis-plugins/knee-moaks/Open Weasis with Knee MOAKS.command
 (Weasis opened another way starts without the plugin.)

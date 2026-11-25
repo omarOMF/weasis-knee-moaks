@@ -66,6 +66,20 @@ public final class MoaksController {
     });
   }
 
+  /** "build 12" from the stamp the GitHub build adds; "dev build" when built by hand. */
+  public static String buildLabel() {
+    try (java.io.InputStream in = MoaksController.class.getResourceAsStream("/kneemoaks/build.properties")) {
+      if (in != null) {
+        java.util.Properties p = new java.util.Properties();
+        p.load(in);
+        return "build " + p.getProperty("build", "?");
+      }
+    } catch (IOException e) {
+      // fall through
+    }
+    return "dev build";
+  }
+
   public static Path defaultFolder() {
     return Path.of(System.getProperty("user.home"), "Documents", "KneeMOAKS");
   }

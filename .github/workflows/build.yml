@@ -54,6 +54,13 @@ jobs:
           javac -d /tmp/preview-classes $(find src/main/java/kneemoaks/model src/main/java/kneemoaks/ui src/test/java -name '*.java')
           java -Djava.awt.headless=true -cp /tmp/preview-classes kneemoaks.Preview preview
 
+      - name: Stamp the build number
+        working-directory: plugin
+        run: |
+          mkdir -p src/main/resources/kneemoaks
+          echo "build=${GITHUB_RUN_NUMBER}" > src/main/resources/kneemoaks/build.properties
+          echo "commit=${GITHUB_SHA::7}" >> src/main/resources/kneemoaks/build.properties
+
       - name: Build the plugin
         working-directory: plugin
         run: mvn -B -ntp package -Drevision=${{ env.WEASIS_VERSION }} -Dchangelist=
@@ -66,7 +73,9 @@ jobs:
         working-directory: plugin
         run: |
           mkdir -p dist/weasis-knee-moaks
-          cp target/weasis-knee-moaks-*.jar dist/weasis-knee-moaks/
+          # A new file name for every build: Weasis reuses its cached copy of a plugin whose
+          # file name it has seen before.
+          cp target/weasis-knee-moaks-*.jar "dist/weasis-knee-moaks/weasis-knee-moaks-b${GITHUB_RUN_NUMBER}.jar"
           cp install/Install-Knee-MOAKS.command install/README.txt dist/weasis-knee-moaks/
           chmod +x dist/weasis-knee-moaks/Install-Knee-MOAKS.command
           (cd dist && zip -r weasis-knee-moaks.zip weasis-knee-moaks)
@@ -88,5 +97,5 @@ jobs:
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest dist/weasis-knee-moaks.zip \
             --target "${GITHUB_SHA}" \
-            --title "Knee MOAKS for Weasis ${WEASIS_VERSION}" \
+            --title "Knee MOAKS for Weasis ${WEASIS_VERSION} (build ${GITHUB_RUN_NUMBER})" \
             --notes "Download weasis-knee-moaks.zip, unzip it, then right-click Install-Knee-MOAKS.command and choose Open. Built from ${GITHUB_SHA::7}."
