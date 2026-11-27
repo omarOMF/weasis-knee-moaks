@@ -252,7 +252,7 @@ public final class MoaksController {
     return dotsVisible;
   }
 
-  /** Smart outlines of the structures, drawn on the slice where each marker was placed. */
+  /** Boxes around the marked structures, on every slice that cuts through them. */
   public boolean outlinesVisible() {
     return outlinesVisible;
   }

@@ -55,7 +55,7 @@ public final class MoaksPanel extends JPanel {
   private final JTextField reader = new JTextField(5);
   private final Pill dotButton = new Pill("MOAKS marker", ButtonStyle.SECONDARY);
   private final Pill showDots = new Pill("Hide markers", ButtonStyle.LINK);
-  private final Pill showOutlines = new Pill("Hide outlines", ButtonStyle.LINK);
+  private final Pill showOutlines = new Pill("Hide boxes", ButtonStyle.LINK);
   private final List<StructureButton> buttons = new ArrayList<>();
   private final KneeArt art;
   private final JPanel editorHolder = new JPanel(new BorderLayout());
@@ -215,7 +215,7 @@ public final class MoaksPanel extends JPanel {
     Pill finish = new Pill("Finish knee", ButtonStyle.PRIMARY);
     finish.setToolTipText("Save the knee; anything you did not score is saved as normal");
     finish.addActionListener(e -> finishKnee());
-    showOutlines.setToolTipText("Show or hide the smart outlines around marked structures");
+    showOutlines.setToolTipText("Show or hide the boxes around marked structures");
     showOutlines.addActionListener(e -> ctl.setOutlinesVisible(!ctl.outlinesVisible()));
     JPanel links = Widgets.row(0, undo, showDots, showOutlines, folder, Box.createHorizontalGlue());
     links.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
@@ -298,7 +298,7 @@ public final class MoaksPanel extends JPanel {
       dotButton.setActive(on);
       dotButton.revalidate();
       showDots.setText(ctl.dotsVisible() ? "Hide markers" : "Show markers");
-      showOutlines.setText(ctl.outlinesVisible() ? "Hide outlines" : "Show outlines");
+      showOutlines.setText(ctl.outlinesVisible() ? "Hide boxes" : "Show boxes");
 
       String sel = ctl.selected();
       art.setStructure(sel);

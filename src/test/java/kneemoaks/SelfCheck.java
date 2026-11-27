@@ -6,7 +6,7 @@ import java.util.List;
 import kneemoaks.model.CsvStore;
 import kneemoaks.model.Dot;
 import kneemoaks.model.Moaks;
-import kneemoaks.model.RegionOutline;
+import kneemoaks.model.GuideBox;
 import kneemoaks.model.ScoreSheet;
 import kneemoaks.model.StudyInfo;
 
@@ -23,7 +23,7 @@ public final class SelfCheck {
     kneeSide();
     csvRoundTrip();
     structures();
-    outlines();
+    boxes();
     System.out.println("All " + passed + " checks passed");
   }
 
@@ -92,32 +92,35 @@ public final class SelfCheck {
     check(s.dotsAt("MFc").size() == 1, "dot assigned to MFc");
   }
 
-  static void outlines() {
-    int w = 256;
-    int h = 256;
-    java.util.Random rnd = new java.util.Random(7);
-    float[] img = new float[w * h];
-    for (int y = 0; y < h; y++) {
-      for (int x = 0; x < w; x++) {
-        double dx = (x - 120) / 40.0;
-        double dy = (y - 130) / 28.0;
-        boolean inside = dx * dx + dy * dy <= 1;
-        img[y * w + x] = (float) ((inside ? 200 : 40) + rnd.nextGaussian() * 10);
-      }
+  static void boxes() {
+    double[] size = GuideBox.sizeMm("FEM-M");
+    check(size != null && size[1] == 55, "medial femur box is 55 mm front to back");
+    check(GuideBox.sizeMm("WHOLE") == null, "no box for the whole knee");
+    double[] c = {10, 20, 30};
+    // an axial slice through the centre: the box's footprint, 30 x 55 mm
+    List<double[]> axial = GuideBox.cut(c, size, new double[] {0, 0, 30}, new double[] {0, 0, 1});
+    check(axial.size() == 4, "axial cut has 4 corners, got " + axial.size());
+    check(Math.abs(area(axial, 0, 1) - 30 * 55) < 1e-6, "axial cut is 30 x 55 mm");
+    // a sagittal slice 5 mm off centre still cuts it: 55 x 35 mm
+    List<double[]> sag = GuideBox.cut(c, size, new double[] {15, 0, 0}, new double[] {1, 0, 0});
+    check(sag.size() == 4 && Math.abs(area(sag, 1, 2) - 55 * 35) < 1e-6, "sagittal cut 55 x 35 mm");
+    // a slice 20 mm to the side misses the 30 mm wide box
+    check(GuideBox.cut(c, size, new double[] {30, 0, 0}, new double[] {1, 0, 0}).isEmpty(),
+        "a slice beyond the box shows nothing");
+    // an oblique slice through the centre gives a closed outline of 4 to 6 corners
+    List<double[]> obl = GuideBox.cut(c, size, c, new double[] {1, 1, 1});
+    check(obl.size() >= 4 && obl.size() <= 6, "oblique cut has " + obl.size() + " corners");
+  }
+
+  /** Shoelace area of a polygon on two of its axes. */
+  private static double area(List<double[]> poly, int ax, int ay) {
+    double s2 = 0;
+    for (int i = 0; i < poly.size(); i++) {
+      double[] a = poly.get(i);
+      double[] b = poly.get((i + 1) % poly.size());
+      s2 += a[ax] * b[ay] - b[ax] * a[ay];
     }
-    RegionOutline.Result r = RegionOutline.outline(img, w, h, 120, 130, 90);
-    double truth = Math.PI * 40 * 28;
-    check(r != null, "outline found for a clear ellipse");
-    double area = RegionOutline.polygonArea(r.polygon());
-    check(Math.abs(area - truth) / truth < 0.12, "outline area " + Math.round(area) + " vs " + Math.round(truth));
-    // A uniform slice has no edge to stop at: it must give up, not outline everything.
-    float[] flat = new float[w * h];
-    for (int i = 0; i < flat.length; i++) {
-      flat[i] = (float) (100 + rnd.nextGaussian() * 5);
-    }
-    check(RegionOutline.outline(flat, w, h, 128, 128, 60) == null, "no outline on a flat slice");
-    // Clicking near the edge of the image does not crash.
-    check(RegionOutline.outline(img, w, h, 0, 0, 60) == null, "seed on the border is refused");
+    return Math.abs(s2) / 2;
   }
 
   static void structures() {

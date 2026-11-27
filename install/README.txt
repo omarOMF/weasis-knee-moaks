@@ -1,7 +1,7 @@
 Knee MOAKS Outline for Weasis 4.8.1 (experimental)
 ==================================================
 
-This is the version with smart outlines. It installs next to the regular Knee MOAKS and does
+This is the version with structure boxes. It installs next to the regular Knee MOAKS and does
 not change it: open Weasis with whichever launcher you want to use.
 
 Install (once)
@@ -33,10 +33,10 @@ Scoring
 - Delete a marker: click it and press Delete; or right-click (two-finger / Control-click) it and
   choose Delete marker; or press the red Delete next to it in the panel. "Hide markers" (bottom
   of the panel) hides them all; the right-click menu can also delete all markers on the knee.
-- Smart outline: once a marker has its structure, the plugin outlines the region of similar
-  signal around the spot you clicked, on that slice, and stops at edges (up to 3 cm away).
-  No AI: it works best on a clear boundary and draws nothing when it is unsure. "Hide
-  outlines" at the bottom of the panel turns them off.
+- Boxes: once a marker has its structure, a box shows around it, sized for that structure
+  (condyle, plateau, trochlear or patellar facet), like the boxes of a spine labeler. It shows
+  on every slice that cuts through it, in all three planes. It is a guide, not a tracing of the
+  bone. "Hide boxes" at the bottom of the panel turns them off.
 - Anything not scored is saved as normal when you press "Finish knee".
 
 Files (in your home folder: Finder > Go > Home > KneeMOAKS; "Files" at the bottom of the panel

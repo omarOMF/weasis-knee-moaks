@@ -18,6 +18,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import kneemoaks.model.Dot;
+import kneemoaks.model.GuideBox;
 import kneemoaks.ui.MoaksController;
 import kneemoaks.ui.Theme;
 import org.dcm4che3.data.Tag;
@@ -289,7 +290,7 @@ final class DotOverlay extends JComponent {
     Graphics2D g2 = Theme.smooth(graphics);
     double half = halfThickness(g);
     if (ctl.outlinesVisible()) {
-      paintOutlines(g2, img);
+      paintBoxes(g2, img, g, half);
     }
     for (Dot d : ctl.sheet().dots()) {
       if (!sameFrame(d, img)) {
@@ -328,47 +329,52 @@ final class DotOverlay extends JComponent {
     g2.dispose();
   }
 
-  /** Smart outlines of the named markers placed on the image this view is showing. */
-  private void paintOutlines(Graphics2D g2, DicomImageElement img) {
-    String sop = WeasisHost.text(img, Tag.SOPInstanceUID);
-    if (sop.isEmpty()) {
-      return;
-    }
+  /**
+   * Boxes around the marked structures, like a spine labeler's: each marker's structure block
+   * (sized for a condyle, plateau, facet...) cut by this slice. Instant; no image analysis.
+   */
+  private void paintBoxes(Graphics2D g2, DicomImageElement img, GeometryOfSlice g, double half) {
+    Vector3d o = g.getTLHC();
+    Vector3d nrm = g.getNormal();
+    double[] origin = {o.x, o.y, o.z};
+    double[] normal = {nrm.x, nrm.y, nrm.z};
     for (Dot d : ctl.sheet().dots()) {
-      if (d.location() == null || !sop.equals(d.sopUid())) {
+      double[] size = GuideBox.sizeMm(d.location());
+      if (size == null || !sameFrame(d, img)) {
         continue;
       }
-      java.awt.geom.Path2D.Double model = Outlines.of(d, img, sop);
-      if (model == null) {
+      java.util.List<double[]> cut = GuideBox.cut(d.position(), size, origin, normal);
+      if (cut.isEmpty()) {
         continue;
       }
-      java.awt.geom.Path2D.Double onView = new java.awt.geom.Path2D.Double();
-      java.awt.geom.PathIterator it = model.getPathIterator(null);
-      double[] c = new double[6];
-      while (!it.isDone()) {
-        int type = it.currentSegment(c);
-        if (type == java.awt.geom.PathIterator.SEG_CLOSE) {
-          onView.closePath();
-        } else {
-          Point p = view.getMouseCoordinatesFromImage(c[0], c[1]);
-          if (p != null) {
-            if (type == java.awt.geom.PathIterator.SEG_MOVETO) {
-              onView.moveTo(p.x, p.y);
-            } else {
-              onView.lineTo(p.x, p.y);
-            }
-          }
+      java.awt.geom.Path2D.Double box = new java.awt.geom.Path2D.Double();
+      for (int i = 0; i < cut.size(); i++) {
+        double[] p = cut.get(i);
+        Point2D ip = g.getImagePosition(new Vector3d(p[0], p[1], p[2]));
+        Point vp = ip == null ? null : view.getMouseCoordinatesFromImage(ip.getX(), ip.getY());
+        if (vp == null) {
+          box = null;
+          break;
         }
-        it.next();
+        if (i == 0) {
+          box.moveTo(vp.x, vp.y);
+        } else {
+          box.lineTo(vp.x, vp.y);
+        }
       }
+      if (box == null) {
+        continue;
+      }
+      box.closePath();
+      boolean ownSlice = Math.abs(distanceToPlane(vec(d), g)) <= half;
       int grade = ctl.dotGrade(d);
       Color col = grade < 0 ? Theme.ACCENT : Theme.grade(grade);
-      g2.setColor(new Color(0, 0, 0, 120));
+      g2.setColor(new Color(0, 0, 0, ownSlice ? 110 : 70));
       g2.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-      g2.draw(onView);
-      g2.setColor(Theme.alpha(col, 0.9));
-      g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-      g2.draw(onView);
+      g2.draw(box);
+      g2.setColor(Theme.alpha(col, ownSlice ? 0.8 : 0.45));
+      g2.setStroke(new BasicStroke(1.3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+      g2.draw(box);
     }
   }
 

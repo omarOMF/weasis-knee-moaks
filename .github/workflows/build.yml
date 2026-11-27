@@ -99,4 +99,4 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "Knee MOAKS Outline (experimental) for Weasis ${WEASIS_VERSION} (build ${GITHUB_RUN_NUMBER})" \
             --prerelease \
-            --notes "Experimental version with smart outlines. Download weasis-knee-moaks-outline.zip, unzip it, then right-click Install-Knee-MOAKS-Outline.command and choose Open. The regular version is unchanged. Built from ${GITHUB_SHA::7}."
+            --notes "Experimental version with structure boxes. Download weasis-knee-moaks-outline.zip, unzip it, then right-click Install-Knee-MOAKS-Outline.command and choose Open. The regular version is unchanged. Built from ${GITHUB_SHA::7}."
