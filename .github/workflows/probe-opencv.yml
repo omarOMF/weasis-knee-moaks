@@ -1,0 +1,32 @@
+name: Check what Weasis's OpenCV can do
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Fetch Weasis's OpenCV (Java classes and the Mac library)
+        run: |
+          mvn -B -ntp -q dependency:get -Dartifact=org.weasis.core:weasis-core-img:5.0.0.1 -Dtransitive=false
+          mvn -B -ntp -q dependency:get -Dartifact=org.weasis.thirdparty.org.opencv:libopencv_java:5.1.0-dcm:dylib:macosx-aarch64 -Dtransitive=false || true
+          mvn -B -ntp -q dependency:get -Dartifact=org.weasis.thirdparty.org.opencv:libopencv_java:5.0.0-dcm:dylib:macosx-aarch64 -Dtransitive=false || true
+          find ~/.m2/repository/org/weasis -name "*.jar" -path "*core-img*" -o -name "*.dylib" | head
+      - name: Which OpenCV modules have Java classes
+        run: |
+          JAR=$(find ~/.m2/repository/org/weasis/core/weasis-core-img -name "*.jar" | head -1)
+          unzip -l "$JAR" | awk '{print $4}' | grep "^org/opencv/" | cut -d/ -f1-3 | sort | uniq -c
+          echo "dnn classes:"; unzip -l "$JAR" | grep -c "org/opencv/dnn/" || true
+          unzip -p "$JAR" META-INF/MANIFEST.MF | tr -d '\r' | sed -n '/Bundle-Version/p'
+      - name: Does the Mac library contain the dnn module
+        run: |
+          for f in $(find ~/.m2/repository/org/weasis/thirdparty -name "*.dylib"); do
+            echo "$f  $(stat -c %s "$f") bytes"
+            echo "  dnn symbols: $(strings "$f" | grep -c 'cv::dnn' || true)"
+            echo "  onnx mentions: $(strings "$f" | grep -ci 'onnx' || true)"
+          done
