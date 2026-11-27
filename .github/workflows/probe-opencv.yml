@@ -2,6 +2,9 @@ name: Check what Weasis's OpenCV can do
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/probe-opencv.yml
 
 jobs:
   probe:
