@@ -55,8 +55,8 @@ public final class StructurePopup {
 
     JLabel title = Widgets.label("Where is this?", 15f, true, Theme.TEXT);
     Pill close = new Pill("×", ButtonStyle.SECONDARY);
-    close.setToolTipText("Cancel and remove the dot (Esc)");
-    close.getAccessibleContext().setAccessibleName("Cancel and remove the dot");
+    close.setToolTipText("Cancel and remove the marker (Esc)");
+    close.getAccessibleContext().setAccessibleName("Cancel and remove the marker");
     close.setPreferredSize(new Dimension(30, 26));
     close.setMaximumSize(new Dimension(30, 26));
     close.addActionListener(e -> close());

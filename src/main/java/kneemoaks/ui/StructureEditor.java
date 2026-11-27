@@ -267,8 +267,8 @@ public final class StructureEditor extends JPanel {
       dotRow.removeAll();
       dotRow.setLayout(new BoxLayout(dotRow, BoxLayout.Y_AXIS));
       boolean armed = structure.key().equals(ctl.armed());
-      Pill add = new Pill(armed ? "Click the image…" : "Add dot", ButtonStyle.TINTED).tint(Theme.ACCENT);
-      add.setToolTipText("Place a dot for this structure on the image");
+      Pill add = new Pill(armed ? "Click the image…" : "Add marker", ButtonStyle.TINTED).tint(Theme.ACCENT);
+      add.setToolTipText("Place a marker for this structure on the image");
       add.addActionListener(e -> {
         if (armed) {
           ctl.setDotMode(false);
@@ -283,12 +283,12 @@ public final class StructureEditor extends JPanel {
       for (Dot d : dots) {
         n++;
         String where = ctl.describe(d);
-        Pill go = new Pill((where.isEmpty() ? "Dot " + n : "Dot on " + where) + " · Go to", ButtonStyle.TINTED)
+        Pill go = new Pill((where.isEmpty() ? "Marker " + n : "Marker on " + where) + " · Go to", ButtonStyle.TINTED)
             .tint(c).dot(c);
         go.addActionListener(e -> ctl.goTo(d));
         Pill del = new Pill("Delete", ButtonStyle.TINTED).tint(Theme.grade(3));
-        del.setToolTipText("Delete this dot");
-        del.getAccessibleContext().setAccessibleName("Delete dot " + n);
+        del.setToolTipText("Delete this marker");
+        del.getAccessibleContext().setAccessibleName("Delete marker " + n);
         del.addActionListener(e -> ctl.deleteDot(d.id()));
         JPanel line = Widgets.row(6, go, del, Box.createHorizontalGlue());
         line.setAlignmentX(Component.LEFT_ALIGNMENT);

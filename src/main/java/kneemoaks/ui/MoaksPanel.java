@@ -53,8 +53,8 @@ public final class MoaksPanel extends JPanel {
   private final JComboBox<String> visit =
       new JComboBox<>(new String[] {"Baseline", "Month 12", "Month 24", "Month 48"});
   private final JTextField reader = new JTextField(5);
-  private final Pill dotButton = new Pill("MOAKS dot", ButtonStyle.SECONDARY);
-  private final Pill showDots = new Pill("Hide dots", ButtonStyle.LINK);
+  private final Pill dotButton = new Pill("MOAKS marker", ButtonStyle.SECONDARY);
+  private final Pill showDots = new Pill("Hide markers", ButtonStyle.LINK);
   private final List<StructureButton> buttons = new ArrayList<>();
   private final KneeArt art;
   private final JPanel editorHolder = new JPanel(new BorderLayout());
@@ -100,9 +100,9 @@ public final class MoaksPanel extends JPanel {
         ctl.setKneeSide("Right".equals(sheet.kneeSide()) ? "Left" : "Right");
       }
     });
-    showDots.setToolTipText("Show or hide the dots on the images");
+    showDots.setToolTipText("Show or hide the markers on the images");
     showDots.addActionListener(e -> ctl.setDotsVisible(!ctl.dotsVisible()));
-    dotButton.setToolTipText("Click the image to drop a dot, then pick the structure");
+    dotButton.setToolTipText("Click the image to place a marker, then pick the structure");
     dotButton.addActionListener(e -> ctl.setDotMode(!ctl.dotMode()));
     body.add(left(Widgets.row(8, title, new Badge(kneeBadge), Box.createHorizontalGlue(), dotButton)));
     body.add(Box.createVerticalStrut(6));
@@ -231,7 +231,7 @@ public final class MoaksPanel extends JPanel {
     int choice = javax.swing.JOptionPane.showOptionDialog(this,
         "Saved. Anything not scored was saved as normal.\n\nFile: "
             + MoaksController.shortPath(ctl.csvFile())
-            + "\n(also knee_moaks_wide.csv and knee_moaks_dots.csv in the same folder)",
+            + "\n(also knee_moaks_wide.csv and knee_moaks_markers.csv in the same folder)",
         "Knee MOAKS", javax.swing.JOptionPane.DEFAULT_OPTION,
         javax.swing.JOptionPane.INFORMATION_MESSAGE, null, options, options[1]);
     if (choice == 0) {
@@ -282,10 +282,10 @@ public final class MoaksPanel extends JPanel {
       emptyNote.setVisible(!has);
       boolean on = ctl.dotMode();
       Moaks.Structure armed = Moaks.structure(ctl.armed());
-      dotButton.setText(on ? (armed != null ? "Click: " + armed.name() : "Click the image…") : "MOAKS dot");
+      dotButton.setText(on ? (armed != null ? "Click: " + armed.name() : "Click the image…") : "MOAKS marker");
       dotButton.setActive(on);
       dotButton.revalidate();
-      showDots.setText(ctl.dotsVisible() ? "Hide dots" : "Show dots");
+      showDots.setText(ctl.dotsVisible() ? "Hide markers" : "Show markers");
 
       String sel = ctl.selected();
       art.setStructure(sel);
@@ -327,7 +327,7 @@ public final class MoaksPanel extends JPanel {
       editorHolder.add(c, BorderLayout.CENTER);
     } else if (!sheet.study().isEmpty()) {
       editorHolder.add(Widgets.label(
-          "<html>Pick a structure above, or press <b>MOAKS dot</b> and click the image.</html>",
+          "<html>Pick a structure above, or press <b>MOAKS marker</b> and click the image.</html>",
           12.5f, false, Theme.TEXT_2), BorderLayout.CENTER);
     }
     editorHolder.revalidate();
@@ -394,7 +394,7 @@ public final class MoaksPanel extends JPanel {
       g2.drawString(getText(), 28, h / 2f - 2);
       g2.setFont(Theme.font(10.5f, false));
       g2.setColor(Theme.TEXT_3);
-      String sub = done + " of " + total + (dots > 0 ? " · " + dots + (dots == 1 ? " dot" : " dots") : "");
+      String sub = done + " of " + total + (dots > 0 ? " · " + dots + (dots == 1 ? " marker" : " markers") : "");
       g2.drawString(sub, 28, h / 2f + fm.getAscent() - 2);
       g2.dispose();
     }

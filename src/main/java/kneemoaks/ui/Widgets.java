@@ -370,7 +370,7 @@ public final class Widgets {
       return this;
     }
 
-    /** Shows a small coloured dot before the text (used by the "Go to dot" button). */
+    /** Shows a small coloured dot before the text (used by the "Go to" marker button). */
     public Pill dot(Color c) {
       dotColor = c;
       revalidate();

@@ -5,7 +5,7 @@ import org.weasis.core.api.gui.Insertable;
 import org.weasis.core.api.gui.Insertable.Type;
 import org.weasis.core.api.gui.InsertableFactory;
 
-/** Adds the "MOAKS dot" button to the DICOM viewer's toolbar. */
+/** Adds the "MOAKS marker" button to the DICOM viewer's toolbar. */
 @org.osgi.service.component.annotations.Component(
     service = InsertableFactory.class,
     property = {"org.weasis.dicom.viewer2d.View2dContainer=true"})

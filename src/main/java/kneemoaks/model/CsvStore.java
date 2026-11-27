@@ -25,14 +25,16 @@ import kneemoaks.model.Moaks.Option;
  * <ul>
  *   <li>{@code knee_moaks_long.csv}: one row per scored field
  *   <li>{@code knee_moaks_wide.csv}: one row per read, one column per field
- *   <li>{@code knee_moaks_dots.csv}: one row per dot, with its position in patient mm
+ *   <li>{@code knee_moaks_markers.csv}: one row per marker, with its position in patient mm
  * </ul>
  */
 public final class CsvStore {
 
   public static final String LONG_FILE = "knee_moaks_long.csv";
   public static final String WIDE_FILE = "knee_moaks_wide.csv";
-  public static final String DOTS_FILE = "knee_moaks_dots.csv";
+  public static final String DOTS_FILE = "knee_moaks_markers.csv";
+  /** Name used by builds before markers were called markers; still read. */
+  static final String OLD_DOTS_FILE = "knee_moaks_dots.csv";
 
   public static final String STATUS_DRAFT = "in progress";
   public static final String STATUS_FINAL = "final";
@@ -45,8 +47,8 @@ public final class CsvStore {
       "category", "item_id", "location", "item_name", "field", "value", "meaning", "entered"));
 
   static final List<String> DOT_COLUMNS = concat(HEADER, List.of(
-      "dot_id", "location", "location_name", "scores", "x_mm", "y_mm", "z_mm",
-      "frame_of_reference_uid", "dot_series_instance_uid", "sop_instance_uid", "image_x", "image_y"));
+      "marker_id", "location", "location_name", "scores", "x_mm", "y_mm", "z_mm",
+      "frame_of_reference_uid", "marker_series_instance_uid", "sop_instance_uid", "image_x", "image_y"));
 
   private final Path folder;
 
@@ -66,7 +68,7 @@ public final class CsvStore {
       }
     }
     cols.add("n_entered");
-    cols.add("n_dots");
+    cols.add("n_markers");
     return cols;
   }
 
@@ -103,14 +105,14 @@ public final class CsvStore {
       }
     }
     wide.put("n_entered", String.valueOf(sheet.enteredCount()));
-    wide.put("n_dots", String.valueOf(sheet.dots().size()));
+    wide.put("n_markers", String.valueOf(sheet.dots().size()));
 
     List<Map<String, String>> dotRows = new ArrayList<>();
     for (Dot d : sheet.dots()) {
       Map<String, String> row = new LinkedHashMap<>(head);
       Moaks.Structure st = Moaks.structure(d.location());
       Moaks.Location loc = d.location() == null ? null : Moaks.location(d.location());
-      row.put("dot_id", d.id());
+      row.put("marker_id", d.id());
       row.put("location", d.location() == null ? "" : d.location());
       row.put("location_name", st != null ? st.name() : loc == null ? "" : loc.name());
       row.put("scores", d.location() == null ? ""
@@ -119,7 +121,7 @@ public final class CsvStore {
       row.put("y_mm", fmt(d.y()));
       row.put("z_mm", fmt(d.z()));
       row.put("frame_of_reference_uid", nz(d.frameOfReferenceUid()));
-      row.put("dot_series_instance_uid", nz(d.seriesUid()));
+      row.put("marker_series_instance_uid", nz(d.seriesUid()));
       row.put("sop_instance_uid", nz(d.sopUid()));
       row.put("image_x", fmt(d.imageX()));
       row.put("image_y", fmt(d.imageY()));
@@ -147,7 +149,11 @@ public final class CsvStore {
       }
     }
     List<Dot> dots = new ArrayList<>();
-    for (Map<String, String> row : read(folder.resolve(DOTS_FILE))) {
+    Path markersFile = folder.resolve(DOTS_FILE);
+    if (!Files.exists(markersFile)) {
+      markersFile = folder.resolve(OLD_DOTS_FILE);
+    }
+    for (Map<String, String> row : read(markersFile)) {
       if (!key.equals(rowKey(row))) {
         continue;
       }
@@ -155,13 +161,13 @@ public final class CsvStore {
       try {
         String loc = Moaks.structureOfLocation(nz(row.get("location")));
         dots.add(new Dot(
-            row.get("dot_id"),
+            first(row, "marker_id", "dot_id"),
             loc,
             Double.parseDouble(row.get("x_mm")),
             Double.parseDouble(row.get("y_mm")),
             Double.parseDouble(row.get("z_mm")),
             nz(row.get("frame_of_reference_uid")),
-            nz(row.get("dot_series_instance_uid")),
+            nz(first(row, "marker_series_instance_uid", "dot_series_instance_uid")),
             nz(row.get("sop_instance_uid")),
             parse(row.get("image_x")),
             parse(row.get("image_y"))));
@@ -381,6 +387,11 @@ public final class CsvStore {
     } catch (RuntimeException e) {
       return Double.NaN;
     }
+  }
+
+  private static String first(Map<String, String> row, String a, String b) {
+    String v = row.get(a);
+    return v == null || v.isEmpty() ? row.get(b) : v;
   }
 
   private static String nz(String s) {

@@ -4,8 +4,8 @@ A Weasis 4.8.1 plugin for scoring knee MRI with MOAKS (Hunter et al., Osteoarthr
 
 - **Knee MOAKS panel** in the DICOM viewer's tool area: a shaded knee illustration (joint surfaces opened out, menisci on the tibial plateau, a side view for soft tissue) to pick a subregion and score it.
 - **Full MOAKS**: cartilage (area.full-thickness), bone marrow lesions (size, % lesion, number, including the subspinous region), osteophytes, menisci (morphology and extrusion), effusion- and Hoffa-synovitis, ACL, PCL, patellar tendon, periarticular cysts and bursae, loose bodies.
-- **MOAKS dots** on the images: click the finding and pick one of eight structures (patella, trochlea, femur, tibia; medial or lateral). Click a dot later to score everything under that structure in the panel. Dots are kept in patient coordinates and shown on sagittal, coronal and axial views.
-- **CSV output** in `~/Documents/KneeMOAKS`: long (one row per field), wide (one row per read) and dots files. Untouched items are saved as normal when the knee is finished.
+- **MOAKS markers** on the images: click the finding and pick one of eight structures (patella, trochlea, femur, tibia; medial or lateral). Double-click a marker later to score everything under that structure in the panel. Markers are small open crosshairs kept in patient coordinates and shown on sagittal, coronal and axial views.
+- **CSV output** in `~/KneeMOAKS`: long (one row per field), wide (one row per read) and markers files. Untouched items are saved as normal when the knee is finished.
 
 ## Install
 

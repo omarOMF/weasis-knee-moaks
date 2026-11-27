@@ -23,7 +23,7 @@ public final class MoaksController {
 
   /** What the Weasis side offers; a stub in tests and previews. */
   public interface ViewerHost {
-    /** Turns the "MOAKS dot" mouse mode on the image views on or off. */
+    /** Turns the "MOAKS marker" mouse mode on the image views on or off. */
     void setDotMode(boolean on);
 
     /** Scrolls every view to the slice of the dot and selects the view it was placed in. */
@@ -188,7 +188,7 @@ public final class MoaksController {
     return dotMode;
   }
 
-  /** "Add dot" in the panel: the next click on an image becomes a dot of this structure. */
+  /** "Add marker" in the panel: the next click on an image becomes a marker of this structure. */
   public void arm(String location) {
     armed = location;
     setDotMode(true);
@@ -323,6 +323,24 @@ public final class MoaksController {
     }
     Moaks.Structure st = Moaks.structure(d.location());
     return st == null ? d.location() : st.name();
+  }
+
+  /** Short tag drawn next to a marker: MF, LT, MTr, PM... ("?" before a structure is picked). */
+  public String markerTag(Dot d) {
+    if (d.location() == null) {
+      return "?";
+    }
+    return switch (d.location()) {
+      case "PAT-M" -> "PM";
+      case "PAT-L" -> "PL";
+      case "TRO-M" -> "MTr";
+      case "TRO-L" -> "LTr";
+      case "FEM-M" -> "MF";
+      case "FEM-L" -> "LF";
+      case "TIB-M" -> "MT";
+      case "TIB-L" -> "LT";
+      default -> d.location();
+    };
   }
 
   /** Colour grade of a dot: the worst finding under its structure; -1 if none. */

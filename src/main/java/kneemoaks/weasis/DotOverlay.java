@@ -42,6 +42,7 @@ final class DotOverlay extends JComponent {
   private Point pressed;
   private boolean ours;
   private boolean menuShown;
+  private String hoverId;
 
   DotOverlay(ViewCanvas<DicomImageElement> view, MoaksController ctl) {
     this.view = view;
@@ -113,7 +114,13 @@ final class DotOverlay extends JComponent {
 
       @Override
       public void mouseMoved(MouseEvent e) {
-        setCursor(dotAt(e.getPoint()) != null
+        Dot over = dotAt(e.getPoint());
+        String id = over == null ? null : over.id();
+        if (id == null ? hoverId != null : !id.equals(hoverId)) {
+          hoverId = id;
+          repaint(); // the full name shows only while the pointer is on a marker
+        }
+        setCursor(over != null
             ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
             : dotMode ? Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) : null);
         forward(e);
@@ -126,6 +133,10 @@ final class DotOverlay extends JComponent {
 
       @Override
       public void mouseExited(MouseEvent e) {
+        if (hoverId != null) {
+          hoverId = null;
+          repaint();
+        }
         forward(e);
       }
     };
@@ -142,15 +153,15 @@ final class DotOverlay extends JComponent {
 
   private void showMenu(Dot d, Point p) {
     JPopupMenu menu = new JPopupMenu();
-    JMenuItem delete = new JMenuItem("Delete dot");
+    JMenuItem delete = new JMenuItem("Delete marker");
     delete.addActionListener(a -> ctl.deleteDot(d.id()));
     JMenuItem open = new JMenuItem("Score " + ctl.dotLabel(d) + " in the panel");
     open.addActionListener(a -> ctl.dotClicked(d));
-    JMenuItem all = new JMenuItem("Delete all dots on this knee…");
+    JMenuItem all = new JMenuItem("Delete all markers on this knee…");
     all.addActionListener(a -> {
       int n = ctl.sheet().dots().size();
       int ok = javax.swing.JOptionPane.showConfirmDialog(this,
-          "Delete all " + n + " dots on this knee? Scores are kept.", "Delete all dots",
+          "Delete all " + n + " markers on this knee? Scores are kept.", "Delete all markers",
           javax.swing.JOptionPane.OK_CANCEL_OPTION);
       if (ok == javax.swing.JOptionPane.OK_OPTION) {
         ctl.deleteAllDots();
@@ -291,55 +302,97 @@ final class DotOverlay extends JComponent {
       }
       boolean onSlice = Math.abs(dist) <= half;
       int grade = ctl.dotGrade(d);
-      Color c = d.location() == null ? Theme.ACCENT : grade >= 0 ? Theme.grade(grade) : Theme.ACCENT;
-      String label = ctl.dotLabel(d);
-      if (!onSlice) {
-        label = (d.location() == null ? "Dot" : d.location())
-            + String.format(Locale.ROOT, " · %.1f mm from slice", Math.abs(dist));
+      Color c = d.location() == null || grade < 0 ? Theme.ACCENT : Theme.grade(grade);
+      boolean hover = d.id().equals(hoverId);
+      boolean selected = d.id().equals(ctl.selectedDot());
+      if (onSlice) {
+        paintMarker(g2, at, c, ctl.markerTag(d), selected);
+      } else {
+        paintTick(g2, at, c);
       }
-      paintDot(g2, at, c, label, onSlice);
-      if (d.id().equals(ctl.selectedDot())) {
-        g2.setColor(java.awt.Color.WHITE);
-        g2.setStroke(new BasicStroke(2f));
-        g2.draw(new Ellipse2D.Double(at.getX() - 11, at.getY() - 11, 22, 22));
+      if (hover) {
+        String label = ctl.dotLabel(d);
+        String scores = d.location() == null ? "" : ctl.sheet().structureSummary(d.location());
+        if (!scores.isEmpty()) {
+          label += " · " + scores;
+        }
+        if (!onSlice) {
+          label += String.format(Locale.ROOT, " · %.1f mm from slice", Math.abs(dist));
+        }
+        paintLabel(g2, at, c, label, getWidth());
       }
     }
     g2.dispose();
   }
 
-  private static void paintDot(Graphics2D g, Point2D at, Color c, String label, boolean onSlice) {
+  /** Open crosshair: four short ticks around the spot, so the finding itself stays visible. */
+  private static void paintMarker(Graphics2D g, Point2D at, Color c, String tag, boolean selected) {
     double x = at.getX();
     double y = at.getY();
-    float alpha = onSlice ? 1f : 0.5f;
-    Color cc = Theme.alpha(c, alpha);
-    double lx = x + 22;
-    double ly = y + 30;
-    g.setColor(cc);
-    g.setStroke(new BasicStroke(1.5f));
-    g.draw(new java.awt.geom.Line2D.Double(x, y, lx, ly));
-    if (onSlice) {
-      g.setColor(Theme.alpha(c, 0.5));
-      g.setStroke(new BasicStroke(2f));
-      g.draw(new Ellipse2D.Double(x - 13, y - 13, 26, 26));
+    double gap = 5;
+    double len = 7;
+    java.awt.geom.Path2D.Double ticks = new java.awt.geom.Path2D.Double();
+    ticks.moveTo(x, y - gap - len);
+    ticks.lineTo(x, y - gap);
+    ticks.moveTo(x, y + gap);
+    ticks.lineTo(x, y + gap + len);
+    ticks.moveTo(x - gap - len, y);
+    ticks.lineTo(x - gap, y);
+    ticks.moveTo(x + gap, y);
+    ticks.lineTo(x + gap + len, y);
+    // a dark edge keeps the ticks readable on bright tissue
+    g.setColor(new Color(0, 0, 0, 150));
+    g.setStroke(new BasicStroke(3.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+    g.draw(ticks);
+    g.setColor(selected ? Color.WHITE : c);
+    g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+    g.draw(ticks);
+    if (selected) {
+      g.setColor(c);
+      g.draw(new Ellipse2D.Double(x - 2, y - 2, 4, 4));
     }
-    double r = onSlice ? 6 : 4.5;
-    g.setColor(cc);
-    g.fill(new Ellipse2D.Double(x - r, y - r, 2 * r, 2 * r));
-    g.setColor(Theme.alpha(Color.WHITE, alpha));
-    g.setStroke(new BasicStroke(2f));
-    g.draw(new Ellipse2D.Double(x - r, y - r, 2 * r, 2 * r));
+    outlinedText(g, tag, (float) (x + gap + 4), (float) (y - gap - 3), c, 11.5f);
+  }
 
+  /** On another slice: a tiny faint plus, just enough to show a marker is near. */
+  private static void paintTick(Graphics2D g, Point2D at, Color c) {
+    double x = at.getX();
+    double y = at.getY();
+    g.setColor(Theme.alpha(c, 0.45));
+    g.setStroke(new BasicStroke(1.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+    g.draw(new java.awt.geom.Line2D.Double(x - 3, y, x + 3, y));
+    g.draw(new java.awt.geom.Line2D.Double(x, y - 3, x, y + 3));
+  }
+
+  /** The full name, shown only while the pointer is on the marker. */
+  private static void paintLabel(Graphics2D g, Point2D at, Color c, String label, int maxX) {
     g.setFont(Theme.font(12f, true));
     FontMetrics fm = g.getFontMetrics();
-    double w = fm.stringWidth(label) + 24;
-    double h = 24;
-    RoundRectangle2D.Double pill = new RoundRectangle2D.Double(lx - 4, ly - h / 2, w, h, h, h);
-    g.setColor(Theme.alpha(new Color(0x1C1C1E), onSlice ? 0.9f : 0.7f));
+    double w = fm.stringWidth(label) + 20;
+    double h = 22;
+    double lx = at.getX() + 16;
+    if (lx + w > maxX - 4) {
+      lx = Math.max(4, at.getX() - 16 - w); // near the right edge: put it on the left
+    }
+    double ly = at.getY() + 14;
+    RoundRectangle2D.Double pill = new RoundRectangle2D.Double(lx, ly, w, h, h, h);
+    g.setColor(new Color(28, 28, 30, 235));
     g.fill(pill);
-    g.setColor(cc);
+    g.setColor(c);
     g.setStroke(new BasicStroke(1f));
     g.draw(pill);
-    g.setColor(Theme.alpha(Theme.TEXT, onSlice ? 1f : 0.75f));
-    g.drawString(label, (float) (lx + 8), (float) (ly + (fm.getAscent() - fm.getDescent()) / 2.0));
+    g.setColor(Theme.TEXT);
+    g.drawString(label, (float) (lx + 10), (float) (ly + h / 2 + (fm.getAscent() - fm.getDescent()) / 2.0));
+  }
+
+  private static void outlinedText(Graphics2D g, String s, float x, float y, Color c, float size) {
+    java.awt.Font f = Theme.font(size, true);
+    java.awt.font.GlyphVector gv = f.createGlyphVector(g.getFontRenderContext(), s);
+    java.awt.Shape shape = gv.getOutline(x, y);
+    g.setColor(new Color(0, 0, 0, 170));
+    g.setStroke(new BasicStroke(2.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+    g.draw(shape);
+    g.setColor(c);
+    g.fill(shape);
   }
 }
