@@ -288,6 +288,9 @@ final class DotOverlay extends JComponent {
     }
     Graphics2D g2 = Theme.smooth(graphics);
     double half = halfThickness(g);
+    if (ctl.outlinesVisible()) {
+      paintOutlines(g2, img);
+    }
     for (Dot d : ctl.sheet().dots()) {
       if (!sameFrame(d, img)) {
         continue;
@@ -323,6 +326,50 @@ final class DotOverlay extends JComponent {
       }
     }
     g2.dispose();
+  }
+
+  /** Smart outlines of the named markers placed on the image this view is showing. */
+  private void paintOutlines(Graphics2D g2, DicomImageElement img) {
+    String sop = WeasisHost.text(img, Tag.SOPInstanceUID);
+    if (sop.isEmpty()) {
+      return;
+    }
+    for (Dot d : ctl.sheet().dots()) {
+      if (d.location() == null || !sop.equals(d.sopUid())) {
+        continue;
+      }
+      java.awt.geom.Path2D.Double model = Outlines.of(d, img, sop);
+      if (model == null) {
+        continue;
+      }
+      java.awt.geom.Path2D.Double onView = new java.awt.geom.Path2D.Double();
+      java.awt.geom.PathIterator it = model.getPathIterator(null);
+      double[] c = new double[6];
+      while (!it.isDone()) {
+        int type = it.currentSegment(c);
+        if (type == java.awt.geom.PathIterator.SEG_CLOSE) {
+          onView.closePath();
+        } else {
+          Point p = view.getMouseCoordinatesFromImage(c[0], c[1]);
+          if (p != null) {
+            if (type == java.awt.geom.PathIterator.SEG_MOVETO) {
+              onView.moveTo(p.x, p.y);
+            } else {
+              onView.lineTo(p.x, p.y);
+            }
+          }
+        }
+        it.next();
+      }
+      int grade = ctl.dotGrade(d);
+      Color col = grade < 0 ? Theme.ACCENT : Theme.grade(grade);
+      g2.setColor(new Color(0, 0, 0, 120));
+      g2.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+      g2.draw(onView);
+      g2.setColor(Theme.alpha(col, 0.9));
+      g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+      g2.draw(onView);
+    }
   }
 
   /** Open crosshair: four short ticks around the spot, so the finding itself stays visible. */

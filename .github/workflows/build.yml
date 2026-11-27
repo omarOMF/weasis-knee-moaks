@@ -1,4 +1,4 @@
-name: Build plugin
+name: Build plugin (outline version)
 
 on:
   push:
@@ -72,30 +72,31 @@ jobs:
       - name: Package the download
         working-directory: plugin
         run: |
-          mkdir -p dist/weasis-knee-moaks
+          mkdir -p dist/weasis-knee-moaks-outline
           # A new file name for every build: Weasis reuses its cached copy of a plugin whose
           # file name it has seen before.
-          cp target/weasis-knee-moaks-*.jar "dist/weasis-knee-moaks/weasis-knee-moaks-b${GITHUB_RUN_NUMBER}.jar"
-          cp install/Install-Knee-MOAKS.command install/README.txt dist/weasis-knee-moaks/
-          chmod +x dist/weasis-knee-moaks/Install-Knee-MOAKS.command
-          (cd dist && zip -r weasis-knee-moaks.zip weasis-knee-moaks)
+          cp target/weasis-knee-moaks-outline-*.jar "dist/weasis-knee-moaks-outline/weasis-knee-moaks-outline-b${GITHUB_RUN_NUMBER}.jar"
+          cp install/Install-Knee-MOAKS-Outline.command install/README.txt dist/weasis-knee-moaks-outline/
+          chmod +x dist/weasis-knee-moaks-outline/Install-Knee-MOAKS-Outline.command
+          (cd dist && zip -r weasis-knee-moaks-outline.zip weasis-knee-moaks-outline)
 
       - name: Keep the files with this run
         uses: actions/upload-artifact@v4
         with:
-          name: weasis-knee-moaks
+          name: weasis-knee-moaks-outline
           path: |
-            plugin/dist/weasis-knee-moaks.zip
+            plugin/dist/weasis-knee-moaks-outline.zip
             plugin/preview/*.png
 
       - name: Publish the download on the Releases page
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/outline'
         working-directory: plugin
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest dist/weasis-knee-moaks.zip \
+          gh release delete outline-latest --yes --cleanup-tag || true
+          gh release create outline-latest dist/weasis-knee-moaks-outline.zip \
             --target "${GITHUB_SHA}" \
-            --title "Knee MOAKS for Weasis ${WEASIS_VERSION} (build ${GITHUB_RUN_NUMBER})" \
-            --notes "Download weasis-knee-moaks.zip, unzip it, then right-click Install-Knee-MOAKS.command and choose Open. Built from ${GITHUB_SHA::7}."
+            --title "Knee MOAKS Outline (experimental) for Weasis ${WEASIS_VERSION} (build ${GITHUB_RUN_NUMBER})" \
+            --prerelease \
+            --notes "Experimental version with smart outlines. Download weasis-knee-moaks-outline.zip, unzip it, then right-click Install-Knee-MOAKS-Outline.command and choose Open. The regular version is unchanged. Built from ${GITHUB_SHA::7}."

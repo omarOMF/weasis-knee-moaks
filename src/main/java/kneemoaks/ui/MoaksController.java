@@ -48,6 +48,7 @@ public final class MoaksController {
   private String armed;
   private boolean dotMode;
   private boolean dotsVisible = true;
+  private boolean outlinesVisible = true;
   private String selectedDot;
   private String saveStatus = "Not saved yet";
   private boolean dirty;
@@ -76,12 +77,12 @@ public final class MoaksController {
       if (in != null) {
         java.util.Properties p = new java.util.Properties();
         p.load(in);
-        return "build " + p.getProperty("build", "?");
+        return "Outline build " + p.getProperty("build", "?");
       }
     } catch (IOException e) {
       // fall through
     }
-    return "dev build";
+    return "Outline dev build";
   }
 
   public static Path defaultFolder() {
@@ -249,6 +250,19 @@ public final class MoaksController {
 
   public boolean dotsVisible() {
     return dotsVisible;
+  }
+
+  /** Smart outlines of the structures, drawn on the slice where each marker was placed. */
+  public boolean outlinesVisible() {
+    return outlinesVisible;
+  }
+
+  public void setOutlinesVisible(boolean on) {
+    outlinesVisible = on;
+    if (host != null) {
+      host.refreshViews();
+    }
+    fire();
   }
 
   public void setDotsVisible(boolean on) {

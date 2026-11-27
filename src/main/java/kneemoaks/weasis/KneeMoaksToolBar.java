@@ -13,7 +13,7 @@ public final class KneeMoaksToolBar extends WtoolBar {
   private final JToggleButton dot = new JToggleButton();
 
   public KneeMoaksToolBar() {
-    super("Knee MOAKS", 450);
+    super("Knee MOAKS Outline", 450);
     ctl = KneeMoaks.acquire();
     dot.setIcon(new FlatSVGIcon(
         Objects.requireNonNull(KneeMoaksToolBar.class.getResource("/icon/svg/moaks-marker.svg"))));

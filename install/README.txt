@@ -1,20 +1,24 @@
-Knee MOAKS for Weasis 4.8.1
-===========================
+Knee MOAKS Outline for Weasis 4.8.1 (experimental)
+==================================================
+
+This is the version with smart outlines. It installs next to the regular Knee MOAKS and does
+not change it: open Weasis with whichever launcher you want to use.
 
 Install (once)
 1. Quit Weasis.
-2. Right-click "Install-Knee-MOAKS.command" and choose Open, then click Open again.
+2. Right-click "Install-Knee-MOAKS-Outline.command" and choose Open, then click Open again.
    If macOS refuses ("unidentified developer"), either allow it in System Settings >
    Privacy & Security > Open Anyway, or open Terminal and run:
-     bash ~/Downloads/weasis-knee-moaks/Install-Knee-MOAKS.command
-3. Weasis opens with the plugin. The "Knee MOAKS" panel is in the right-hand tool area of the
+     bash ~/Downloads/weasis-knee-moaks-outline/Install-Knee-MOAKS-Outline.command
+3. Weasis opens with the plugin. The "Knee MOAKS Outline" panel is in the right-hand tool area of the
    DICOM viewer, and a "MOAKS marker" button is in the toolbar.
 
-To update: download the new zip and run Install-Knee-MOAKS.command again. The build number
+To update: download the new zip and run Install-Knee-MOAKS-Outline.command again. The build number
 shows at the bottom of the panel.
 
 Next time, open Weasis with:
-   ~/Weasis-plugins/knee-moaks/Open Weasis with Knee MOAKS.command
+   ~/Weasis-plugins/knee-moaks-outline/Open Weasis with Knee MOAKS Outline.command
+(The regular version keeps its own: ~/Weasis-plugins/knee-moaks/Open Weasis with Knee MOAKS.command)
 (Weasis opened another way starts without the plugin.)
 
 Scoring
@@ -29,6 +33,10 @@ Scoring
 - Delete a marker: click it and press Delete; or right-click (two-finger / Control-click) it and
   choose Delete marker; or press the red Delete next to it in the panel. "Hide markers" (bottom
   of the panel) hides them all; the right-click menu can also delete all markers on the knee.
+- Smart outline: once a marker has its structure, the plugin outlines the region of similar
+  signal around the spot you clicked, on that slice, and stops at edges (up to 3 cm away).
+  No AI: it works best on a clear boundary and draws nothing when it is unsure. "Hide
+  outlines" at the bottom of the panel turns them off.
 - Anything not scored is saved as normal when you press "Finish knee".
 
 Files (in your home folder: Finder > Go > Home > KneeMOAKS; "Files" at the bottom of the panel

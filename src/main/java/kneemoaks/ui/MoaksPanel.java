@@ -55,6 +55,7 @@ public final class MoaksPanel extends JPanel {
   private final JTextField reader = new JTextField(5);
   private final Pill dotButton = new Pill("MOAKS marker", ButtonStyle.SECONDARY);
   private final Pill showDots = new Pill("Hide markers", ButtonStyle.LINK);
+  private final Pill showOutlines = new Pill("Hide outlines", ButtonStyle.LINK);
   private final List<StructureButton> buttons = new ArrayList<>();
   private final KneeArt art;
   private final JPanel editorHolder = new JPanel(new BorderLayout());
@@ -214,9 +215,20 @@ public final class MoaksPanel extends JPanel {
     Pill finish = new Pill("Finish knee", ButtonStyle.PRIMARY);
     finish.setToolTipText("Save the knee; anything you did not score is saved as normal");
     finish.addActionListener(e -> finishKnee());
-    JPanel buttonsRow = Widgets.row(2, undo, showDots, folder, Box.createHorizontalGlue(), finish);
+    showOutlines.setToolTipText("Show or hide the smart outlines around marked structures");
+    showOutlines.addActionListener(e -> ctl.setOutlinesVisible(!ctl.outlinesVisible()));
+    JPanel links = Widgets.row(0, undo, showDots, showOutlines, folder, Box.createHorizontalGlue());
+    links.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+    JPanel buttonsRow = Widgets.row(2, Box.createHorizontalGlue(), finish);
     buttonsRow.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
-    f.add(buttonsRow, BorderLayout.SOUTH);
+    JPanel bottom = new JPanel();
+    bottom.setOpaque(false);
+    bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
+    links.setAlignmentX(Component.LEFT_ALIGNMENT);
+    buttonsRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+    bottom.add(links);
+    bottom.add(buttonsRow);
+    f.add(bottom, BorderLayout.SOUTH);
     return f;
   }
 
@@ -286,6 +298,7 @@ public final class MoaksPanel extends JPanel {
       dotButton.setActive(on);
       dotButton.revalidate();
       showDots.setText(ctl.dotsVisible() ? "Hide markers" : "Show markers");
+      showOutlines.setText(ctl.outlinesVisible() ? "Hide outlines" : "Show outlines");
 
       String sel = ctl.selected();
       art.setStructure(sel);

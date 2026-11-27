@@ -18,10 +18,10 @@
   </parent>
 
   <groupId>io.github.omaromf</groupId>
-  <artifactId>weasis-knee-moaks</artifactId>
+  <artifactId>weasis-knee-moaks-outline</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
-  <name>Knee MOAKS scoring [${project.artifactId}]</name>
+  <name>Knee MOAKS scoring with smart outlines [${project.artifactId}]</name>
 
   <build>
     <plugins>
@@ -30,8 +30,8 @@
         <artifactId>bnd-maven-plugin</artifactId>
         <configuration>
           <bnd>
-            Bundle-Name: Knee MOAKS
-            Bundle-SymbolicName: io.github.omaromf.weasis.kneemoaks
+            Bundle-Name: Knee MOAKS Outline
+            Bundle-SymbolicName: io.github.omaromf.weasis.kneemoaks.outline
             -noextraheaders: true
             -includeresource.all = -src/main/resources
             Import-Package: org.slf4j;version=!,*
@@ -64,6 +64,12 @@
       <groupId>org.weasis.dicom</groupId>
       <artifactId>weasis-dicom-codec</artifactId>
       <version>${project.parent.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.weasis.core</groupId>
+      <artifactId>weasis-core-img</artifactId>
+      <version>${weasis.core.img.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

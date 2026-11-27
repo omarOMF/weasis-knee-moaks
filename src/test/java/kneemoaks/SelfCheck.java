@@ -6,6 +6,7 @@ import java.util.List;
 import kneemoaks.model.CsvStore;
 import kneemoaks.model.Dot;
 import kneemoaks.model.Moaks;
+import kneemoaks.model.RegionOutline;
 import kneemoaks.model.ScoreSheet;
 import kneemoaks.model.StudyInfo;
 
@@ -22,6 +23,7 @@ public final class SelfCheck {
     kneeSide();
     csvRoundTrip();
     structures();
+    outlines();
     System.out.println("All " + passed + " checks passed");
   }
 
@@ -88,6 +90,34 @@ public final class SelfCheck {
     check(s.dot(d.id()).location() == null, "new dot has no location");
     s.assignDot(d.id(), "MFc");
     check(s.dotsAt("MFc").size() == 1, "dot assigned to MFc");
+  }
+
+  static void outlines() {
+    int w = 256;
+    int h = 256;
+    java.util.Random rnd = new java.util.Random(7);
+    float[] img = new float[w * h];
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
+        double dx = (x - 120) / 40.0;
+        double dy = (y - 130) / 28.0;
+        boolean inside = dx * dx + dy * dy <= 1;
+        img[y * w + x] = (float) ((inside ? 200 : 40) + rnd.nextGaussian() * 10);
+      }
+    }
+    RegionOutline.Result r = RegionOutline.outline(img, w, h, 120, 130, 90);
+    double truth = Math.PI * 40 * 28;
+    check(r != null, "outline found for a clear ellipse");
+    double area = RegionOutline.polygonArea(r.polygon());
+    check(Math.abs(area - truth) / truth < 0.12, "outline area " + Math.round(area) + " vs " + Math.round(truth));
+    // A uniform slice has no edge to stop at: it must give up, not outline everything.
+    float[] flat = new float[w * h];
+    for (int i = 0; i < flat.length; i++) {
+      flat[i] = (float) (100 + rnd.nextGaussian() * 5);
+    }
+    check(RegionOutline.outline(flat, w, h, 128, 128, 60) == null, "no outline on a flat slice");
+    // Clicking near the edge of the image does not crash.
+    check(RegionOutline.outline(img, w, h, 0, 0, 60) == null, "seed on the border is refused");
   }
 
   static void structures() {

@@ -15,7 +15,7 @@ import org.weasis.core.ui.docking.PluginTool;
 /** The "Knee MOAKS" panel in the right-hand tool area of the DICOM viewer. */
 public final class KneeMoaksTool extends PluginTool {
 
-  public static final String NAME = "Knee MOAKS";
+  public static final String NAME = "Knee MOAKS Outline";
 
   private final MoaksController ctl;
 
